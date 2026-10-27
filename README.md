@@ -1,0 +1,39 @@
+# Tasks
+
+A very simple, fluid task list for the desktop, in the spirit of [freewrite](https://github.com/farzaa/freewrite).
+Click any task to open it and write notes in a Notion-style editor.
+
+## Run it
+
+```bash
+npm install
+npm run dev      # hot-reloading dev mode
+npm start        # build once and open the app
+npm run dist     # build an installable app into release/ (.dmg on macOS)
+npm test         # storage tests
+```
+
+## Using it
+
+- Type in **Add a task** and press Enter. Press `n` or `⌘N` anywhere on the list to jump there.
+- Click the circle to finish a task. Drag the dots on the left of a row to reorder.
+- Click a task's title to open it. Type `/` in the notes for headings, to-do lists, quotes, code and dividers; select text for bold, italic, strike, code and links. Markdown shortcuts (`#`, `-`, `[]`, `>`) work too. `Esc` goes back.
+- Delete a task from its page. It goes to Trash for 30 days, and the toast offers Undo.
+- The bottom bar sets font size, font, light or dark, and fullscreen. It fades while you type and returns when you move the mouse.
+
+## Your data
+
+Everything stays on your machine, in `tasks.json` inside the app's data folder
+(`~/Library/Application Support/Tasks` on macOS).
+
+Every change is written to disk as it happens, including half-typed tasks:
+
+1. The whole list is written to `tasks.json.tmp` and flushed to disk (`fsync`).
+2. The previous good copy is kept as `tasks.json.bak`.
+3. The temp file is renamed over `tasks.json`, which is atomic.
+
+A crash or power cut at any point leaves at least one complete copy, and the app
+loads the newest valid one. If a file is ever unreadable it is set aside as
+`*.corrupt-<time>` rather than overwritten. A daily snapshot goes to `backups/`
+(the last 14 days are kept), and only one copy of the app can run at a time so two
+windows can never overwrite each other.

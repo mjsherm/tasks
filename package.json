@@ -1,0 +1,64 @@
+{
+  "name": "tasks",
+  "productName": "Tasks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A very simple, fluid task list.",
+  "author": "Matt",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "start": "vite build && electron .",
+    "build": "vite build",
+    "dist": "vite build && electron-builder",
+    "test": "node --test test/*.test.cjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@floating-ui/dom": "^1.8.0",
+    "@fontsource/lato": "^5.3.0",
+    "@tiptap/core": "^3.32.0",
+    "@tiptap/extension-list": "^3.32.0",
+    "@tiptap/extensions": "^3.32.0",
+    "@tiptap/pm": "^3.32.0",
+    "@tiptap/react": "^3.32.0",
+    "@tiptap/starter-kit": "^3.32.0",
+    "@tiptap/suggestion": "^3.32.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.6",
+    "cross-env": "^10.1.0",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
+    "motion": "^14.6.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "vite": "^8.3.5",
+    "wait-on": "^9.5.1"
+  },
+  "build": {
+    "appId": "com.mjsherm.tasks",
+    "productName": "Tasks",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "publish": null,
+    "directories": {
+      "output": "release"
+    }
+  }
+}
