@@ -1,7 +1,8 @@
-import React, { useEffect, useReducer, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useMemo, useReducer, useRef, useState, useCallback } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { api, createSaver } from './api.js'
 import { reducer, findTask } from './state.js'
+import { listProjects } from './projects.js'
 import TaskList from './components/TaskList.jsx'
 import TaskDetail from './components/TaskDetail.jsx'
 import TrashView from './components/TrashView.jsx'
@@ -79,6 +80,25 @@ export default function App() {
   const back = useCallback(() => setView((v) => ({ name: v.from || 'list' })), [])
   const toList = useCallback(() => setView({ name: 'list' }), [])
   const setDraft = useCallback((text) => saver.current.setDraft(text), [])
+  const setFilter = useCallback((project) => dispatch({ type: 'setting', key: 'project', value: project }), [])
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const clearProject = useCallback((name) => {
+    const { tasks, archive } = stateRef.current
+    const ids = [...tasks, ...archive].filter((t) => t.project === name).map((t) => t.id)
+    dispatch({ type: 'clearProject', name })
+    showToast(`Removed #${name}`, () => dispatch({ type: 'restoreProject', name, ids }))
+  }, [showToast])
+  // Same array back while the project list is unchanged, so typing in a note
+  // doesn't re-render the list or the switcher.
+  const projectsRef = useRef([])
+  const projects = useMemo(() => {
+    const next = state ? listProjects(state.tasks, state.archive) : []
+    const same = next.length === projectsRef.current.length &&
+      next.every((p, i) => p.name === projectsRef.current[i].name && p.open === projectsRef.current[i].open)
+    if (!same) projectsRef.current = next
+    return projectsRef.current
+  }, [state?.tasks, state?.archive])
 
   // While another page is open the hidden list doesn't need to follow every
   // keystroke; it catches up in one render when you come back.
@@ -87,6 +107,8 @@ export default function App() {
   if (!state) return null
 
   const openTask = view.name === 'task' && findTask(state, view.id)
+  // A filter whose project no longer exists falls back to All.
+  const filter = projects.some((p) => p.name === state.settings.project) ? state.settings.project : null
   const current = openTask ? 'task' : view.name === 'task' ? 'list' : view.name
   if (current === 'list' || !listTasks.current) listTasks.current = state.tasks
   const toggleView = (name) => setView(view.name === name ? { name: 'list' } : { name })
@@ -101,6 +123,10 @@ export default function App() {
           <div className={'page list-page' + (current === 'list' ? ' is-shown' : '')} hidden={current !== 'list'}>
             <TaskList
               tasks={listTasks.current}
+              projects={projects}
+              filter={filter}
+              onFilter={setFilter}
+              onClearProject={clearProject}
               initialDraft={initialDraft}
               onDraft={setDraft}
               showDone={state.settings.showDone}
@@ -113,7 +139,7 @@ export default function App() {
           <AnimatePresence initial={false}>
             {current === 'task' ? (
               <motion.div key={'task-' + openTask.id} className="page" {...page}>
-                <TaskDetail task={openTask} dispatch={dispatch} onBack={back} backLabel={view.from === 'archive' ? 'Archive' : 'Tasks'} />
+                <TaskDetail task={openTask} projects={projects} dispatch={dispatch} onBack={back} backLabel={view.from === 'archive' ? 'Archive' : 'Tasks'} />
               </motion.div>
             ) : current === 'trash' ? (
               <motion.div key="trash" className="page" {...page}>
@@ -121,7 +147,7 @@ export default function App() {
               </motion.div>
             ) : current === 'archive' ? (
               <motion.div key="archive" className="page" {...page}>
-                <ArchiveView archive={state.archive} dispatch={dispatch} onBack={toList} onOpen={openFromArchive} onDelete={deleteTask} />
+                <ArchiveView archive={state.archive} filter={filter} dispatch={dispatch} onBack={toList} onOpen={openFromArchive} onDelete={deleteTask} />
               </motion.div>
             ) : null}
           </AnimatePresence>

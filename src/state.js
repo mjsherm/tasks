@@ -4,7 +4,7 @@ export const DEFAULT_STATE = {
   archive: [],
   trash: [],
   draft: '',
-  settings: { fontSize: 18, font: 'Lato', theme: 'light', showDone: true },
+  settings: { fontSize: 18, font: 'Lato', theme: 'light', showDone: true, project: null },
 }
 
 const TRASH_DAYS = 30
@@ -45,6 +45,7 @@ export function reducer(state, action) {
       const task = {
         id: action.id || newId(),
         title: action.title,
+        project: action.project || null,
         done: false,
         body: null,
         createdAt: now,
@@ -75,10 +76,13 @@ export function reducer(state, action) {
     case 'update':
       return mapTask(action.id, (t) => ({ ...t, ...action.patch, updatedAt: now }))
     case 'reorder': {
+      // The ids may be a filtered subset (one project); reorder them within
+      // the slots they already occupy and leave every other task in place.
+      const wanted = new Set(action.ids)
       const byId = new Map(state.tasks.map((t) => [t.id, t]))
-      const open = action.ids.map((id) => byId.get(id)).filter(Boolean)
-      const rest = state.tasks.filter((t) => !action.ids.includes(t.id))
-      return { ...state, tasks: [...open, ...rest] }
+      const queue = action.ids.map((id) => byId.get(id)).filter(Boolean)
+      const tasks = state.tasks.map((t) => (wanted.has(t.id) ? queue.shift() : t))
+      return { ...state, tasks }
     }
     case 'delete': {
       const task = findTask(state, action.id)
@@ -125,6 +129,20 @@ export function reducer(state, action) {
         archive: state.archive.filter((t) => !ids.has(t.id)),
         tasks: [...state.tasks, ...back],
       }
+    }
+    case 'clearProject': {
+      const clear = (t) => (t.project === action.name ? { ...t, project: null } : t)
+      return {
+        ...state,
+        tasks: state.tasks.map(clear),
+        archive: state.archive.map(clear),
+        settings: state.settings.project === action.name ? { ...state.settings, project: null } : state.settings,
+      }
+    }
+    case 'restoreProject': {
+      const ids = new Set(action.ids)
+      const put = (t) => (ids.has(t.id) ? { ...t, project: action.name } : t)
+      return { ...state, tasks: state.tasks.map(put), archive: state.archive.map(put) }
     }
     case 'setting':
       return { ...state, settings: { ...state.settings, [action.key]: action.value } }

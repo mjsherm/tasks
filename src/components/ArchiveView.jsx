@@ -5,7 +5,8 @@ import { serviceLinks } from '../links.js'
 
 const day = (ms) => new Date(ms).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 
-export default function ArchiveView({ archive, dispatch, onBack, onOpen, onDelete }) {
+export default function ArchiveView({ archive: all, filter, dispatch, onBack, onOpen, onDelete }) {
+  const archive = useMemo(() => (filter ? all.filter((t) => t.project === filter) : all), [all, filter])
   // Grouped by the day each batch was archived, newest first.
   const groups = useMemo(() => {
     const map = new Map()
@@ -22,7 +23,7 @@ export default function ArchiveView({ archive, dispatch, onBack, onOpen, onDelet
       <button type="button" className="back" onClick={onBack}>
         <span aria-hidden>←</span> Tasks
       </button>
-      <h1 className="trash-title">Archive</h1>
+      <h1 className="trash-title">Archive{filter ? <span className="muted"> · #{filter}</span> : null}</h1>
       <p className="meta">{archive.length ? `${archive.length} finished ${archive.length === 1 ? 'task' : 'tasks'}` : 'Finished tasks you archive land here.'}</p>
       {groups.map(([label, tasks]) => (
         <section key={label} className="archive-group">

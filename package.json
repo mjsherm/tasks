@@ -11,7 +11,7 @@
     "start": "vite build && electron .",
     "build": "vite build",
     "dist": "vite build && electron-builder",
-    "test": "node --test test/*.test.cjs"
+    "test": "node --test test/*.test.cjs test/*.test.mjs"
   },
   "devDependencies": {
     "@floating-ui/dom": "^1.8.0",

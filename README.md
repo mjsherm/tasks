@@ -18,6 +18,7 @@ npm test         # storage tests
 - Press **⌥Space** anywhere to bring Tasks up, and again to put it away. If another app already uses ⌥Space, Tasks uses **⌃⌥Space** instead.
 - Type in **Add a task** and press Enter. Press `n` or `⌘N` anywhere on the list to jump there. A half-typed task is saved too.
 - Click the circle to finish a task. Drag the dots on the left of a row to reorder. Hover a row and click × to delete it.
+- Type **#project** in a task to tag it (a menu suggests existing projects; Enter adds the task, Tab just completes the tag). The projects appear at the top: click one to see only its tasks, and new tasks you add there join it. Hover a tag for × to remove it, or hover a project at the top to clear it from every task (with Undo). Inside a task, click its #tag to move it.
 - Hover **Done** and click **Archive all** to clear finished tasks away. **Archive** in the bottom bar shows them, grouped by day; you can open, restore or delete any of them.
 - Paste a Slack, Gmail or Google Drive link (in a title or in the notes) and it shows as a small grey logo you can click. `⌘`-click opens any other link in the notes.
 - Click a task's title to open it. Type `/` in the notes for headings, to-do lists, quotes, code and dividers; select text for bold, italic, strike, code and links. Markdown shortcuts (`#`, `-`, `[]`, `>`) work too. `Esc` goes back.

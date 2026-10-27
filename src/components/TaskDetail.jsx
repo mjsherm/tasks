@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react'
 import Checkbox from './Checkbox.jsx'
 import Editor from './Editor.jsx'
+import ProjectField from './ProjectField.jsx'
 
 const fmt = (ms) =>
   new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
-export default function TaskDetail({ task, dispatch, onBack, backLabel = 'Tasks' }) {
+export default function TaskDetail({ task, projects, dispatch, onBack, backLabel = 'Tasks' }) {
   const title = useRef(null)
   const editor = useRef(null)
 
@@ -14,7 +15,8 @@ export default function TaskDetail({ task, dispatch, onBack, backLabel = 'Tasks'
     // Escape still closes an open slash menu or link box first.
     const onKey = (e) => {
       if (e.key !== 'Escape') return
-      if (document.querySelector('.slash-menu') || document.activeElement?.classList.contains('bubble-input')) return
+      const el = document.activeElement
+      if (document.querySelector('.slash-menu') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return
       onBack()
     }
     window.addEventListener('keydown', onKey, true)
@@ -60,6 +62,11 @@ export default function TaskDetail({ task, dispatch, onBack, backLabel = 'Tasks'
       <div className="meta">
         Created {fmt(task.createdAt)}
         {task.done && task.completedAt ? ` · Done ${fmt(task.completedAt)}` : ''}
+        <ProjectField
+          project={task.project}
+          projects={projects}
+          onChange={(project) => dispatch({ type: 'update', id: task.id, patch: { project } })}
+        />
       </div>
 
       <Editor

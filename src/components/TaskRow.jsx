@@ -6,7 +6,7 @@ import { serviceLinks, splitTitle } from '../links.js'
 
 const spring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
-function TaskRow({ task, draggable, dispatch, onOpen, onDelete }) {
+function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onFilter }) {
   const controls = useDragControls()
   // Show the check landing before the row moves to the done section.
   const [pending, setPending] = useState(null)
@@ -67,6 +67,14 @@ function TaskRow({ task, draggable, dispatch, onOpen, onDelete }) {
         {links.map((l) => <LinkChip key={l.href} {...l} />)}
         {hasNotes && !links.length && <span className="notes-dot" title="Has notes" />}
       </div>
+      {showProject && task.project && (
+        <span className="row-tag">
+          <button type="button" className="row-tag-name" title={`Show #${task.project}`} onClick={() => onFilter(task.project)}>{task.project}</button>
+          <button type="button" className="tag-clear" title="Remove from project" aria-label="Remove from project" onClick={() => dispatch({ type: 'update', id: task.id, patch: { project: null } })}>
+            <svg viewBox="0 0 12 12" width="7" height="7"><path d="M2 2l8 8M10 2l-8 8" /></svg>
+          </button>
+        </span>
+      )}
       <button type="button" className="row-delete" title="Delete" aria-label="Delete task" onClick={() => onDelete(task.id)}>
         <svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 2l8 8M10 2l-8 8" /></svg>
       </button>

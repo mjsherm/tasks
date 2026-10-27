@@ -1,6 +1,9 @@
 import React, { memo, useEffect, useRef, useMemo, useState } from 'react'
 import { AnimatePresence, LayoutGroup, Reorder, motion } from 'motion/react'
 import TaskRow from './TaskRow.jsx'
+import ProjectSwitcher from './ProjectSwitcher.jsx'
+import TagMenu, { menuKeys } from './TagMenu.jsx'
+import { parseTitle, tagAtCaret, suggest, displayName } from '../projects.js'
 
 const PROMPTS = [
   'What needs doing?',
@@ -10,13 +13,16 @@ const PROMPTS = [
   'Start anywhere',
 ]
 
+let measure = null
+
 const layoutSpring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
-function TaskList({ tasks, initialDraft, onDraft, showDone, dispatch, onOpen, onDelete, onArchive }) {
-  const open = useMemo(() => tasks.filter((t) => !t.done), [tasks])
+function TaskList({ tasks, projects, filter, initialDraft, onDraft, showDone, dispatch, onOpen, onDelete, onArchive, onFilter, onClearProject }) {
+  const visible = useMemo(() => (filter ? tasks.filter((t) => t.project === filter) : tasks), [tasks, filter])
+  const open = useMemo(() => visible.filter((t) => !t.done), [visible])
   const done = useMemo(
-    () => tasks.filter((t) => t.done).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)),
-    [tasks],
+    () => visible.filter((t) => t.done).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)),
+    [visible],
   )
   const openIds = useMemo(() => open.map((t) => t.id), [open])
   const today = useMemo(() => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }), [])
@@ -24,7 +30,11 @@ function TaskList({ tasks, initialDraft, onDraft, showDone, dispatch, onOpen, on
   return (
     <div className="list">
       <header className="list-head">
-        <span>{today}</span>
+        {projects.length ? (
+          <ProjectSwitcher projects={projects} current={filter} onPick={onFilter} onClear={onClearProject} />
+        ) : (
+          <span>{today}</span>
+        )}
         <span className="muted">{open.length ? `${open.length} to do` : ''}</span>
       </header>
 
@@ -38,12 +48,12 @@ function TaskList({ tasks, initialDraft, onDraft, showDone, dispatch, onOpen, on
         >
           <AnimatePresence initial={false}>
             {open.map((t) => (
-              <TaskRow key={t.id} task={t} draggable dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} />
+              <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
             ))}
           </AnimatePresence>
         </Reorder.Group>
 
-        <NewTask dispatch={dispatch} initialDraft={initialDraft} onDraft={onDraft} empty={open.length === 0} />
+        <NewTask dispatch={dispatch} initialDraft={initialDraft} onDraft={onDraft} empty={open.length === 0} projects={projects} filter={filter} />
 
         <AnimatePresence initial={false}>
           {showDone && done.length > 0 && (
@@ -65,7 +75,7 @@ function TaskList({ tasks, initialDraft, onDraft, showDone, dispatch, onOpen, on
               <ul className="rows">
                 <AnimatePresence initial={false}>
                   {done.map((t) => (
-                    <TaskRow key={t.id} task={t} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} />
+                    <TaskRow key={t.id} task={t} showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
                   ))}
                 </AnimatePresence>
               </ul>
@@ -78,10 +88,14 @@ function TaskList({ tasks, initialDraft, onDraft, showDone, dispatch, onOpen, on
 }
 
 // The add box keeps its own text, so typing re-renders only this input.
-const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty }) {
+// Typing #name tags the task with a project; a menu suggests existing ones.
+const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, projects, filter }) {
   const [draft, setDraft] = useState(initialDraft)
+  const [tag, setTag] = useState(null)
+  const [index, setIndex] = useState(0)
   const input = useRef(null)
   const prompt = useMemo(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)], [])
+  const items = tag ? suggest(projects, tag.query) : []
 
   useEffect(() => {
     if (empty) input.current?.focus()
@@ -101,33 +115,67 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty }
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const change = (value) => {
+  const change = (value, caret = value.length) => {
     setDraft(value)
     onDraft(value)
+    const next = tagAtCaret(value, caret)
+    setTag(next)
+    if (!next) setIndex(0)
   }
 
-  const submit = () => {
-    const title = draft.trim()
+  const pick = (p) => {
+    const before = draft.slice(0, tag.start) + '#' + p.name + ' '
+    const value = before + draft.slice(tag.start + 1 + tag.query.length).replace(/^\s+/, '')
+    change(value, before.length)
+    setTag(null)
+    requestAnimationFrame(() => input.current?.setSelectionRange(before.length, before.length))
+  }
+
+  const submit = (text = draft) => {
+    const { title, project } = parseTitle(text)
     if (!title) return
-    dispatch({ type: 'add', title })
+    dispatch({ type: 'add', title, project: project || filter })
     change('')
   }
+
+  // Line the menu up under the "#" being typed.
+  const menuLeft = useMemo(() => {
+    if (!tag || !input.current) return 0
+    const ctx = (measure ||= document.createElement('canvas')).getContext('2d')
+    ctx.font = getComputedStyle(input.current).font
+    return Math.round(ctx.measureText(draft.slice(0, tag.start)).width)
+  }, [tag?.start, draft])
 
   return (
     <motion.div layout="position" className="new-row" transition={layoutSpring}>
       <span className="new-plus" aria-hidden>+</span>
-      <input
-        ref={input}
-        className="new-input"
-        value={draft}
-        placeholder={empty ? prompt : 'Add a task'}
-        onChange={(e) => change(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') submit()
-          if (e.key === 'Escape') e.currentTarget.blur()
-        }}
-        spellCheck
-      />
+      <div className="new-field">
+        <input
+          ref={input}
+          className="new-input"
+          value={draft}
+          placeholder={filter ? `Add to ${displayName(filter)}` : empty ? prompt : 'Add a task'}
+          onChange={(e) => change(e.target.value, e.target.selectionStart)}
+          onKeyDown={(e) => {
+            if (tag && e.key === 'Escape') { setTag(null); return }
+            // Enter finishes the tag and adds the task in one go; Tab only
+            // completes the tag so you can keep typing.
+            if (tag && e.key === 'Enter' && items.length) {
+              e.preventDefault()
+              const p = items[index]
+              submit(draft.slice(0, tag.start) + '#' + p.name + ' ' + draft.slice(tag.start + 1 + tag.query.length))
+              setTag(null)
+              return
+            }
+            if (tag && menuKeys(e, items, index, setIndex, pick)) { e.preventDefault(); return }
+            if (e.key === 'Enter') submit()
+            if (e.key === 'Escape') e.currentTarget.blur()
+          }}
+          onBlur={() => setTag(null)}
+          spellCheck
+        />
+        {tag && <TagMenu items={items} index={index} onHover={setIndex} onPick={pick} style={{ position: 'absolute', left: menuLeft, top: '2em' }} />}
+      </div>
     </motion.div>
   )
 })

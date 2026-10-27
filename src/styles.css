@@ -274,3 +274,36 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   padding: 8px 14px; border-radius: 999px; box-shadow: var(--lift);
 }
 .toast button { font-weight: 700; }
+
+/* Projects */
+.switcher { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.switcher button { color: var(--faint); transition: color 0.15s var(--ease); }
+.switcher button:hover, .switcher button.is-active { color: var(--ink); }
+.switch-item { position: relative; display: inline-flex; align-items: center; }
+.switch-item .switch-clear { position: absolute; left: 100%; margin-left: 1px; z-index: 1; }
+.switcher .dot { pointer-events: none; transition: opacity 0.15s var(--ease); }
+/* On hover the × takes the place of the dot that follows. */
+.switch-item:hover + .dot { opacity: 0; }
+.switch-clear, .tag-clear {
+  display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 4px;
+  stroke: var(--faint); stroke-width: 1.6; stroke-linecap: round; fill: none;
+  opacity: 0; transition: opacity 0.15s var(--ease), stroke 0.15s var(--ease);
+}
+.switch-item:hover .switch-clear, .row-tag:hover .tag-clear, .project-field:hover .tag-clear { opacity: 1; }
+.switch-clear:hover, .tag-clear:hover { stroke: var(--ink); }
+
+.row-tag { flex: none; display: inline-flex; align-items: center; gap: 2px; font-size: 0.72em; }
+.row-tag-name { color: var(--faint); transition: color 0.15s var(--ease); }
+.row-tag-name:hover { color: var(--ink); }
+
+.new-field { flex: 1; min-width: 0; position: relative; display: flex; }
+.tag-menu { width: 210px; z-index: 30; }
+
+.project-field { position: relative; display: inline-flex; align-items: center; gap: 2px; }
+.project-tag { color: var(--soft); border-bottom: 1px dotted var(--faint); line-height: 1.2; }
+.project-tag:hover { color: var(--ink); }
+.project-field.add { color: var(--faint); opacity: 0; transition: opacity 0.2s var(--ease), color 0.15s var(--ease); }
+.meta:hover .project-field.add, .project-field.add:focus { opacity: 1; }
+.project-field.add:hover { color: var(--ink); }
+.project-field.is-editing { color: var(--soft); }
+.project-input { color: var(--ink); width: auto; }
