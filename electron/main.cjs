@@ -103,7 +103,7 @@ app.whenReady().then(() => {
   ipcMain.handle('app:toggle-fullscreen', () => win && win.setFullScreen(!win.isFullScreen()))
 
   createWindow()
-  if (!process.env.TASKS_E2E || process.env.TASKS_HOTKEY) stopHotkey = watchDoubleShift(toggleWindow)
+  if (!process.env.TASKS_E2E || process.env.TASKS_HOTKEY) stopHotkey = watchDoubleShift(toggleWindow, path.join(store.dir, 'hotkey.log'))
   // Dock click: macOS already brings the app forward; just make sure the
   // window is showing.
   app.on('activate', () => showWindow())
