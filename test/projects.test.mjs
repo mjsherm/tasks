@@ -40,3 +40,10 @@ test('clearing a project can be undone', () => {
   assert.equal(s.tasks[0].project, 'x')
   assert.equal(s.archive[0].project, 'x')
 })
+
+test('projects with nothing left to do drop out of the switcher', async () => {
+  const { activeProjects } = await import('../src/projects.js')
+  const projects = listProjects([{ project: 'a' }, { project: 'b', done: true }])
+  assert.deepEqual(activeProjects(projects).map((p) => p.name), ['a'])
+  assert.deepEqual(suggest(projects, 'b').map((p) => p.name), ['b'])
+})

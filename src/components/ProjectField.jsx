@@ -20,7 +20,7 @@ export default function ProjectField({ project, projects, onChange }) {
   if (editing) {
     return (
       <span className="project-field is-editing">
-        {'\u00a0· #'}
+        <span className="meta-sep">·</span>#
         <input
           autoFocus
           className="project-input"
@@ -41,11 +41,16 @@ export default function ProjectField({ project, projects, onChange }) {
   }
 
   if (!project) {
-    return <button type="button" className="project-field add" onClick={start}>{'\u00a0· Add to a project'}</button>
+    return (
+      <span className="project-field">
+        <span className="meta-sep">·</span>
+        <button type="button" className="project-add" onClick={start}>Add to a project</button>
+      </span>
+    )
   }
   return (
     <span className="project-field">
-      {'\u00a0· '}
+      <span className="meta-sep">·</span>
       <button type="button" className="project-tag" onClick={start}>#{project}</button>
       <button type="button" className="tag-clear" title="Remove from project" aria-label="Remove from project" onClick={() => onChange(null)}><X /></button>
     </span>

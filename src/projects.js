@@ -27,6 +27,9 @@ export function listProjects(tasks, archive = []) {
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name, open]) => ({ name, open }))
 }
 
+// Projects worth showing in the switcher: the ones with something left to do.
+export const activeProjects = (projects) => projects.filter((p) => p.open > 0)
+
 export function suggest(projects, query) {
   const matches = projects.filter((p) => p.name.startsWith(query)).slice(0, 5)
   const exact = projects.some((p) => p.name === query)

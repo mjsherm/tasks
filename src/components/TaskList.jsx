@@ -17,7 +17,7 @@ let measure = null
 
 const layoutSpring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
-function TaskList({ tasks, projects, filter, initialDraft, onDraft, showDone, dispatch, onOpen, onDelete, onArchive, onFilter, onClearProject }) {
+function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, showDone, dispatch, onOpen, onDelete, onArchive, onFilter, onClearProject }) {
   const visible = useMemo(() => (filter ? tasks.filter((t) => t.project === filter) : tasks), [tasks, filter])
   const open = useMemo(() => visible.filter((t) => !t.done), [visible])
   const done = useMemo(
@@ -30,8 +30,8 @@ function TaskList({ tasks, projects, filter, initialDraft, onDraft, showDone, di
   return (
     <div className="list">
       <header className="list-head">
-        {projects.length ? (
-          <ProjectSwitcher projects={projects} current={filter} onPick={onFilter} onClear={onClearProject} />
+        {active.length ? (
+          <ProjectSwitcher projects={active} current={filter} onPick={onFilter} onClear={onClearProject} />
         ) : (
           <span>{today}</span>
         )}

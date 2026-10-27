@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useReducer, useRef, useState, useCallback } 
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { api, createSaver } from './api.js'
 import { reducer, findTask } from './state.js'
-import { listProjects } from './projects.js'
+import { listProjects, activeProjects } from './projects.js'
 import { applyTypography } from './typography.js'
 import TaskList from './components/TaskList.jsx'
 import TaskDetail from './components/TaskDetail.jsx'
@@ -93,6 +93,7 @@ export default function App() {
     if (!same) projectsRef.current = next
     return projectsRef.current
   }, [state?.tasks, state?.archive])
+  const active = useMemo(() => activeProjects(projects), [projects])
 
   // While another page is open the hidden list doesn't need to follow every
   // keystroke; it catches up in one render when you come back.
@@ -101,10 +102,12 @@ export default function App() {
   if (!state) return null
 
   const openTask = view.name === 'task' && findTask(state, view.id)
-  // A filter whose project no longer exists falls back to All.
-  const filter = projects.some((p) => p.name === state.settings.project) ? state.settings.project : null
+  // Finishing a project's last task drops it from the switcher, and a filter
+  // on a project with nothing left to do falls back to All.
+  const filter = active.some((p) => p.name === state.settings.project) ? state.settings.project : null
   const current = openTask ? 'task' : view.name === 'task' ? 'list' : view.name
   if (current === 'list' || !listTasks.current) listTasks.current = state.tasks
+  if (state.settings.project && !filter) queueMicrotask(() => dispatch({ type: 'setting', key: 'project', value: null }))
   const toggleView = (name) => setView(view.name === name ? { name: 'list' } : { name })
 
   return (
@@ -118,6 +121,7 @@ export default function App() {
             <TaskList
               tasks={listTasks.current}
               projects={projects}
+              active={active}
               filter={filter}
               onFilter={setFilter}
               onClearProject={clearProject}

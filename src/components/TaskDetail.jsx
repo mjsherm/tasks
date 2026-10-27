@@ -60,7 +60,7 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
       </div>
 
       <div className="meta">
-        Created {fmt(task.createdAt)}
+        {task.createdAt ? `Created ${fmt(task.createdAt)}` : 'Task'}
         {task.done && task.completedAt ? ` · Done ${fmt(task.completedAt)}` : ''}
         <ProjectField
           project={task.project}
