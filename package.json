@@ -44,6 +44,7 @@
       "dist/**",
       "electron/**",
       "package.json",
+      "build/icon.png",
       "!node_modules/uiohook-napi/prebuilds/{linux,win32}-*/**",
       "!node_modules/uiohook-napi/{libuiohook,src}/**"
     ],
@@ -70,6 +71,7 @@
     "npmRebuild": false,
     "asarUnpack": [
       "node_modules/uiohook-napi/**"
-    ]
+    ],
+    "icon": "build/icon.png"
   }
 }

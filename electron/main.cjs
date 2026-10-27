@@ -20,6 +20,7 @@ function createWindow() {
     minHeight: 420,
     show: false,
     title: 'Tasks',
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     backgroundColor: theme === 'dark' ? '#1c1c1c' : '#ffffff',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: true,
