@@ -50,3 +50,29 @@ test('keeps one snapshot per day, pruned to 14', () => {
   assert.equal(files.length, 14)
   assert.ok(files.includes('tasks-2026-01-20.json'))
 })
+
+test('async saves coalesce and the newest one wins', async () => {
+  const s = new Store(tmpDir())
+  const writes = []
+  for (let i = 0; i < 50; i++) writes.push(s.saveAsync(JSON.stringify(sample('v' + i))))
+  await Promise.all(writes)
+  assert.equal(s.load().tasks[0].title, 'v49')
+  assert.ok(!fs.existsSync(s.tmp))
+})
+
+test('a sync save after async saves keeps the latest data', async () => {
+  const s = new Store(tmpDir())
+  s.saveAsync(sample('async'))
+  await s.idle()
+  s.save(sample('final'))
+  assert.equal(s.load().tasks[0].title, 'final')
+  assert.equal(JSON.parse(fs.readFileSync(s.bak, 'utf8')).tasks[0].title, 'async')
+})
+
+test('a sync save during an async write is never overwritten by it', async () => {
+  const s = new Store(tmpDir())
+  const inFlight = s.saveAsync(sample('older'))
+  s.save(sample('newest'))
+  await inFlight
+  assert.equal(s.load().tasks[0].title, 'newest')
+})

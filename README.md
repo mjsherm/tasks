@@ -10,15 +10,18 @@ npm install
 npm run dev      # hot-reloading dev mode
 npm start        # build once and open the app
 npm run dist     # build an installable app into release/ (.dmg on macOS)
-npm test         # storage tests
+npm test         # storage and hotkey tests
 ```
 
 ## Using it
 
-- Type in **Add a task** and press Enter. Press `n` or `⌘N` anywhere on the list to jump there.
-- Click the circle to finish a task. Drag the dots on the left of a row to reorder.
+- **Double-tap Shift** anywhere to bring Tasks up; double-tap again to put it away. macOS will ask once for Accessibility permission (System Settings > Privacy & Security > Accessibility), which it needs to see the Shift key while you're in other apps.
+- Type in **Add a task** and press Enter. Press `n` or `⌘N` anywhere on the list to jump there. A half-typed task is saved too.
+- Click the circle to finish a task. Drag the dots on the left of a row to reorder. Hover a row and click × to delete it.
+- Hover **Done** and click **Archive all** to clear finished tasks away. **Archive** in the bottom bar shows them, grouped by day; you can open, restore or delete any of them.
+- Paste a Slack, Gmail or Google Drive link (in a title or in the notes) and it shows as a small grey logo you can click. `⌘`-click opens any other link in the notes.
 - Click a task's title to open it. Type `/` in the notes for headings, to-do lists, quotes, code and dividers; select text for bold, italic, strike, code and links. Markdown shortcuts (`#`, `-`, `[]`, `>`) work too. `Esc` goes back.
-- Delete a task from its page. It goes to Trash for 30 days, and the toast offers Undo.
+- Deleted tasks go to Trash for 30 days, and the toast offers Undo.
 - The bottom bar sets font size, font, light or dark, and fullscreen. It fades while you type and returns when you move the mouse.
 
 ## Your data
@@ -29,8 +32,10 @@ Everything stays on your machine, in `tasks.json` inside the app's data folder
 Every change is written to disk as it happens, including half-typed tasks:
 
 1. The whole list is written to `tasks.json.tmp` and flushed to disk (`fsync`).
-2. The previous good copy is kept as `tasks.json.bak`.
-3. The temp file is renamed over `tasks.json`, which is atomic.
+2. The previous good copy is moved to `tasks.json.bak`.
+3. The temp file is renamed to `tasks.json`, which is atomic.
+
+Writes happen off the main thread and are coalesced, so the window never waits on the disk.
 
 A crash or power cut at any point leaves at least one complete copy, and the app
 loads the newest valid one. If a file is ever unreadable it is set aside as

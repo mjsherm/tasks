@@ -13,7 +13,9 @@
     "dist": "vite build && electron-builder",
     "test": "node --test test/*.test.cjs"
   },
-  "dependencies": {},
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
+  },
   "devDependencies": {
     "@floating-ui/dom": "^1.8.0",
     "@fontsource/lato": "^5.3.0",
@@ -41,14 +43,19 @@
     "files": [
       "dist/**",
       "electron/**",
-      "package.json"
+      "package.json",
+      "!node_modules/uiohook-napi/prebuilds/{linux,win32}-*/**",
+      "!node_modules/uiohook-napi/{libuiohook,src}/**"
     ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
         "dmg",
         "zip"
-      ]
+      ],
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "Tasks listens for a double-tap of Shift to show or hide its window."
+      }
     },
     "win": {
       "target": "nsis"
@@ -59,6 +66,10 @@
     "publish": null,
     "directories": {
       "output": "release"
-    }
+    },
+    "npmRebuild": false,
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**"
+    ]
   }
 }

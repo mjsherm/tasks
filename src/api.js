@@ -4,13 +4,12 @@ const KEY = 'tasks-data'
 
 const browserApi = {
   load: async () => JSON.parse(localStorage.getItem(KEY) || 'null'),
-  save: async (data) => localStorage.setItem(KEY, JSON.stringify(data)),
-  saveSync: (data) => localStorage.setItem(KEY, JSON.stringify(data)),
+  save: async (json) => localStorage.setItem(KEY, json),
+  saveSync: (json) => localStorage.setItem(KEY, json),
   toggleFullscreen: async () => {
     if (document.fullscreenElement) document.exitFullscreen()
     else document.documentElement.requestFullscreen()
   },
-  openDataFolder: async () => {},
   platform: 'web',
 }
 
@@ -18,23 +17,26 @@ export const api = window.api || browserApi
 
 // Saves every change as it happens. Only one write is in flight at a time and
 // only the newest state is written next, so a burst of keystrokes never queues
-// stale copies or lands out of order.
+// stale copies or lands out of order. The half-typed task in the add box is
+// saved here too, without going through React, so typing it stays cheap.
 export function createSaver() {
   let inFlight = false
-  let pending = null
-  let latest = null
+  let dirty = false
+  let state = null
+  let draft = ''
+
+  const snapshot = () => JSON.stringify({ ...state, draft })
 
   async function pump() {
     if (inFlight) return
     inFlight = true
-    while (pending) {
-      const data = pending
-      pending = null
+    while (dirty) {
+      dirty = false
       try {
-        await api.save(data)
+        await api.save(snapshot())
       } catch (err) {
         console.error('save failed, retrying', err)
-        pending = pending || data
+        dirty = true
         await new Promise((r) => setTimeout(r, 250))
       }
     }
@@ -42,13 +44,22 @@ export function createSaver() {
   }
 
   return {
-    save(data) {
-      latest = data
-      pending = data
+    init(data) {
+      draft = data?.draft || ''
+      return draft
+    },
+    save(next) {
+      state = next
+      dirty = true
       pump()
     },
+    setDraft(text) {
+      if (text === draft) return
+      draft = text
+      if (state) { dirty = true; pump() }
+    },
     flushSync() {
-      if (latest) api.saveSync(latest)
+      if (state) api.saveSync(snapshot())
     },
   }
 }

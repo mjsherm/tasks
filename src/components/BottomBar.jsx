@@ -5,8 +5,8 @@ const SIZES = [16, 18, 20, 22, 24, 26]
 
 // Freewrite-style footer: quiet text buttons that fade away while you type
 // and come back when the mouse moves.
-export default function BottomBar({ state, dispatch, fonts, view, onTrash, onDelete }) {
-  const { settings, tasks, trash } = state
+export default function BottomBar({ state, dispatch, fonts, view, onTrash, onArchive, onDelete }) {
+  const { settings, tasks, trash, archive } = state
   const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
@@ -48,6 +48,12 @@ export default function BottomBar({ state, dispatch, fonts, view, onTrash, onDel
         {view === 'task' && onDelete && (
           <>
             <button type="button" onClick={onDelete}>Delete</button>
+            <Dot />
+          </>
+        )}
+        {view !== 'task' && (archive.length > 0 || view === 'archive') && (
+          <>
+            <button type="button" className={view === 'archive' ? 'is-active' : ''} onClick={onArchive}>Archive</button>
             <Dot />
           </>
         )}

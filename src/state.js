@@ -1,6 +1,7 @@
 export const DEFAULT_STATE = {
   version: 1,
   tasks: [],
+  archive: [],
   trash: [],
   draft: '',
   settings: { fontSize: 18, font: 'Lato', theme: 'light', showDone: true },
@@ -17,16 +18,24 @@ export function hydrate(data) {
   return {
     ...DEFAULT_STATE,
     ...base,
+    archive: base.archive || [],
     trash: (base.trash || []).filter((t) => (t.deletedAt || 0) > cutoff),
     settings: { ...DEFAULT_STATE.settings, ...(base.settings || {}) },
   }
 }
 
+export const findTask = (state, id) =>
+  state.tasks.find((t) => t.id === id) || state.archive.find((t) => t.id === id)
+
+const strip = ({ deletedAt, archivedAt, ...task }) => task
+
 export function reducer(state, action) {
   const now = Date.now()
+  // Edits apply wherever the task lives, so archived notes stay editable.
   const mapTask = (id, fn) => ({
     ...state,
     tasks: state.tasks.map((t) => (t.id === id ? fn(t) : t)),
+    archive: state.archive.map((t) => (t.id === id ? fn(t) : t)),
   })
 
   switch (action.type) {
@@ -44,15 +53,25 @@ export function reducer(state, action) {
       }
       const open = state.tasks.filter((t) => !t.done)
       const done = state.tasks.filter((t) => t.done)
-      return { ...state, draft: '', tasks: [...open, task, ...done] }
+      return { ...state, tasks: [...open, task, ...done] }
     }
-    case 'toggle':
+    case 'toggle': {
+      const archived = state.archive.find((t) => t.id === action.id)
+      if (archived) {
+        // Unticking an archived task brings it back to the list as open.
+        return {
+          ...state,
+          archive: state.archive.filter((t) => t.id !== action.id),
+          tasks: [{ ...strip(archived), done: false, completedAt: null, updatedAt: now }, ...state.tasks],
+        }
+      }
       return mapTask(action.id, (t) => ({
         ...t,
         done: !t.done,
         completedAt: t.done ? null : now,
         updatedAt: now,
       }))
+    }
     case 'update':
       return mapTask(action.id, (t) => ({ ...t, ...action.patch, updatedAt: now }))
     case 'reorder': {
@@ -62,26 +81,51 @@ export function reducer(state, action) {
       return { ...state, tasks: [...open, ...rest] }
     }
     case 'delete': {
-      const task = state.tasks.find((t) => t.id === action.id)
+      const task = findTask(state, action.id)
       if (!task) return state
       return {
         ...state,
         tasks: state.tasks.filter((t) => t.id !== action.id),
+        archive: state.archive.filter((t) => t.id !== action.id),
         trash: [{ ...task, deletedAt: now }, ...state.trash],
       }
     }
     case 'restore': {
       const task = state.trash.find((t) => t.id === action.id)
       if (!task) return state
-      const { deletedAt, ...restored } = task
+      const restored = strip(task)
+      if (task.archivedAt) {
+        return {
+          ...state,
+          trash: state.trash.filter((t) => t.id !== action.id),
+          archive: [{ ...restored, archivedAt: task.archivedAt }, ...state.archive].sort((a, b) => b.archivedAt - a.archivedAt),
+        }
+      }
       return {
         ...state,
         trash: state.trash.filter((t) => t.id !== action.id),
         tasks: restored.done ? [...state.tasks, restored] : [restored, ...state.tasks],
       }
     }
-    case 'draft':
-      return { ...state, draft: action.value }
+    case 'archiveDone': {
+      const done = state.tasks.filter((t) => t.done)
+      if (!done.length) return state
+      return {
+        ...state,
+        tasks: state.tasks.filter((t) => !t.done),
+        archive: [...done.map((t) => ({ ...t, archivedAt: now })), ...state.archive],
+      }
+    }
+    case 'unarchive': {
+      const ids = new Set(action.ids)
+      const back = state.archive.filter((t) => ids.has(t.id)).map(strip)
+      if (!back.length) return state
+      return {
+        ...state,
+        archive: state.archive.filter((t) => !ids.has(t.id)),
+        tasks: [...state.tasks, ...back],
+      }
+    }
     case 'setting':
       return { ...state, settings: { ...state.settings, [action.key]: action.value } }
     default:

@@ -5,16 +5,20 @@ import Editor from './Editor.jsx'
 const fmt = (ms) =>
   new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
-export default function TaskDetail({ task, dispatch, onBack }) {
+export default function TaskDetail({ task, dispatch, onBack, backLabel = 'Tasks' }) {
   const title = useRef(null)
   const editor = useRef(null)
 
   useEffect(() => {
+    // Capture phase: the editor swallows Escape, so listen before it does.
+    // Escape still closes an open slash menu or link box first.
     const onKey = (e) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) onBack()
+      if (e.key !== 'Escape') return
+      if (document.querySelector('.slash-menu') || document.activeElement?.classList.contains('bubble-input')) return
+      onBack()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [onBack])
 
   // Grow the title field with its text.
@@ -32,7 +36,7 @@ export default function TaskDetail({ task, dispatch, onBack }) {
   return (
     <div className="detail">
       <button type="button" className="back" onClick={onBack}>
-        <span aria-hidden>←</span> Tasks
+        <span aria-hidden>←</span> {backLabel}
       </button>
 
       <div className="detail-head">
