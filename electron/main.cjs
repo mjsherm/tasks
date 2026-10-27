@@ -61,14 +61,21 @@ function createWindow() {
   else win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
 }
 
-function showWindow() {
+function showWindow({ summon = false } = {}) {
   if (!win) return createWindow()
   if (win.isMinimized()) win.restore()
-  // Appear on the current Space, even over a full-screen app.
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-  win.show()
-  win.setVisibleOnAllWorkspaces(false)
-  if (process.platform === 'darwin') app.focus({ steal: true })
+  if (summon) {
+    // Appear on the current Space, even over a full-screen app. Skipping the
+    // process-type switch matters: without it macOS briefly turns Tasks into
+    // a background app, which kicks the window straight back out.
+    const opts = { visibleOnFullScreen: true, skipTransformProcessType: true }
+    win.setVisibleOnAllWorkspaces(true, opts)
+    win.show()
+    win.setVisibleOnAllWorkspaces(false, opts)
+    if (process.platform === 'darwin') app.focus({ steal: true })
+  } else {
+    win.show()
+  }
   win.focus()
 }
 
@@ -81,7 +88,7 @@ function hideWindow() {
 
 function toggleWindow() {
   if (win && win.isVisible() && win.isFocused() && !win.isMinimized()) hideWindow()
-  else showWindow()
+  else showWindow({ summon: true })
 }
 
 app.whenReady().then(() => {
@@ -97,10 +104,12 @@ app.whenReady().then(() => {
 
   createWindow()
   if (!process.env.TASKS_E2E || process.env.TASKS_HOTKEY) stopHotkey = watchDoubleShift(toggleWindow)
-  app.on('activate', showWindow)
+  // Dock click: macOS already brings the app forward; just make sure the
+  // window is showing.
+  app.on('activate', () => showWindow())
 })
 
-app.on('second-instance', showWindow)
+app.on('second-instance', () => showWindow())
 app.on('before-quit', () => { quitting = true })
 app.on('will-quit', () => stopHotkey())
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
