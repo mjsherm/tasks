@@ -44,6 +44,9 @@ function createWindow() {
     hideWindow()
   })
   win.on('closed', () => { win = null })
+  // Covers the green window button too, so the bottom bar label stays right.
+  win.on('enter-full-screen', () => win.webContents.send('app:fullscreen', true))
+  win.on('leave-full-screen', () => win.webContents.send('app:fullscreen', false))
 
   // Links inside notes open in the browser (or Slack), never inside the app.
   win.webContents.setWindowOpenHandler(({ url }) => {

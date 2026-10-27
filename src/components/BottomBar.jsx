@@ -1,16 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import { AnimatePresence } from 'motion/react'
 import { api } from '../api.js'
-
-const SIZES = [16, 18, 20, 22, 24, 26]
+import { fontName } from '../typography.js'
+import TypePanel from './TypePanel.jsx'
 
 // Freewrite-style footer: quiet text buttons that fade away while you type
 // and come back when the mouse moves.
-export default function BottomBar({ state, dispatch, fonts, view, onTrash, onArchive, onDelete }) {
+export default function BottomBar({ state, dispatch, view, onTrash, onArchive, onDelete }) {
   const { settings, tasks, trash, archive } = state
   const [hidden, setHidden] = useState(false)
+  const [typeOpen, setTypeOpen] = useState(false)
+  const closeType = useCallback(() => setTypeOpen(false), [])
+  const [fullscreen, setFullscreen] = useState(false)
+  useEffect(() => api.onFullscreen(setFullscreen), [])
 
   useEffect(() => {
-    const hide = (e) => { if (!e.metaKey && !e.ctrlKey && e.key.length === 1) setHidden(true) }
+    const hide = (e) => {
+      if (e.metaKey || e.ctrlKey || e.key.length !== 1) return
+      if (e.target.closest?.('.type-panel')) return
+      setHidden(true)
+    }
     const show = () => setHidden(false)
     window.addEventListener('keydown', hide)
     window.addEventListener('mousemove', show)
@@ -21,20 +30,19 @@ export default function BottomBar({ state, dispatch, fonts, view, onTrash, onArc
   }, [])
 
   const set = (key, value) => dispatch({ type: 'setting', key, value })
-  const nextSize = SIZES[(SIZES.indexOf(settings.fontSize) + 1) % SIZES.length] || 18
   const doneCount = tasks.filter((t) => t.done).length
   const Dot = () => <span className="dot">•</span>
 
   return (
-    <footer className={'bar' + (hidden ? ' is-hidden' : '')}>
+    <>
+    <AnimatePresence>
+      {typeOpen && <TypePanel settings={settings} set={set} onClose={closeType} />}
+    </AnimatePresence>
+    <footer className={'bar' + (hidden && !typeOpen ? ' is-hidden' : '')}>
       <div className="bar-group">
-        <button type="button" onClick={() => set('fontSize', nextSize)}>{settings.fontSize}px</button>
-        {fonts.map((f) => (
-          <React.Fragment key={f}>
-            <Dot />
-            <button type="button" className={settings.font === f ? 'is-active' : ''} onClick={() => set('font', f)}>{f}</button>
-          </React.Fragment>
-        ))}
+        <button type="button" className={'type-toggle' + (typeOpen ? ' is-active' : '')} onClick={() => setTypeOpen((o) => !o)}>
+          {fontName(settings.font)} · {settings.fontSize}
+        </button>
       </div>
       <div className="bar-group">
         {view === 'list' && doneCount > 0 && (
@@ -63,12 +71,13 @@ export default function BottomBar({ state, dispatch, fonts, view, onTrash, onArc
             <Dot />
           </>
         )}
-        <button type="button" onClick={() => api.toggleFullscreen()}>Fullscreen</button>
+        <button type="button" onClick={() => api.toggleFullscreen()}>{fullscreen ? 'Windowed' : 'Fullscreen'}</button>
         <Dot />
         <button type="button" onClick={() => set('theme', settings.theme === 'dark' ? 'light' : 'dark')}>
           {settings.theme === 'dark' ? 'Light' : 'Dark'}
         </button>
       </div>
     </footer>
+    </>
   )
 }

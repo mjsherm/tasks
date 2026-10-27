@@ -4,7 +4,7 @@ export const DEFAULT_STATE = {
   archive: [],
   trash: [],
   draft: '',
-  settings: { fontSize: 18, font: 'Lato', theme: 'light', showDone: true, project: null },
+  settings: { fontSize: 18, font: 'Lato', theme: 'light', showDone: true, project: null, spacing: 'normal', width: 'medium' },
 }
 
 const TRASH_DAYS = 30

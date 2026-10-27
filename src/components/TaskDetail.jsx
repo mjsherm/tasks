@@ -16,7 +16,7 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
     const onKey = (e) => {
       if (e.key !== 'Escape') return
       const el = document.activeElement
-      if (document.querySelector('.slash-menu') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return
+      if (document.querySelector('.slash-menu, .type-panel') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return
       onBack()
     }
     window.addEventListener('keydown', onKey, true)

@@ -5,5 +5,10 @@ contextBridge.exposeInMainWorld('api', {
   save: (data) => ipcRenderer.invoke('store:save', data),
   saveSync: (data) => ipcRenderer.sendSync('store:save-sync', data),
   toggleFullscreen: () => ipcRenderer.invoke('app:toggle-fullscreen'),
+  onFullscreen: (cb) => {
+    const listener = (_e, on) => cb(on)
+    ipcRenderer.on('app:fullscreen', listener)
+    return () => ipcRenderer.removeListener('app:fullscreen', listener)
+  },
   platform: process.platform,
 })

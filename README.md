@@ -23,7 +23,7 @@ npm test         # storage tests
 - Paste a Slack, Gmail or Google Drive link (in a title or in the notes) and it shows as a small grey logo you can click. `⌘`-click opens any other link in the notes.
 - Click a task's title to open it. Type `/` in the notes for headings, to-do lists, quotes, code and dividers; select text for bold, italic, strike, code and links. Markdown shortcuts (`#`, `-`, `[]`, `>`) work too. `Esc` goes back.
 - Deleted tasks go to Trash for 30 days, and the toast offers Undo.
-- The bottom bar sets font size, font, light or dark, and fullscreen. It fades while you type and returns when you move the mouse.
+- The bottom bar's font control (e.g. "Lato · 18") opens a Type panel: size slider, fonts (including any font installed on your Mac), line spacing and column width, all live. It also has light or dark, and fullscreen. It fades while you type and returns when you move the mouse.
 
 ## Your data
 

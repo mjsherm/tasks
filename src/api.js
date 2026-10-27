@@ -10,6 +10,11 @@ const browserApi = {
     if (document.fullscreenElement) document.exitFullscreen()
     else document.documentElement.requestFullscreen()
   },
+  onFullscreen: (cb) => {
+    const listener = () => cb(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', listener)
+    return () => document.removeEventListener('fullscreenchange', listener)
+  },
   platform: 'web',
 }
 

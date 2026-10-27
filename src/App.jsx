@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { api, createSaver } from './api.js'
 import { reducer, findTask } from './state.js'
 import { listProjects } from './projects.js'
+import { applyTypography } from './typography.js'
 import TaskList from './components/TaskList.jsx'
 import TaskDetail from './components/TaskDetail.jsx'
 import TrashView from './components/TrashView.jsx'
@@ -10,12 +11,6 @@ import ArchiveView from './components/ArchiveView.jsx'
 import BottomBar from './components/BottomBar.jsx'
 import Toast from './components/Toast.jsx'
 
-const FONTS = {
-  Lato: "'Lato', -apple-system, sans-serif",
-  Arial: 'Arial, Helvetica, sans-serif',
-  System: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  Serif: "'Times New Roman', Georgia, serif",
-}
 
 // Opacity and transform only: both run on the compositor, so page changes
 // stay smooth no matter how much is on screen.
@@ -56,8 +51,7 @@ export default function App() {
     if (!settings) return
     const root = document.documentElement
     root.dataset.theme = settings.theme
-    root.style.setProperty('--font', FONTS[settings.font] || FONTS.Lato)
-    root.style.setProperty('--size', settings.fontSize + 'px')
+    applyTypography(settings, root)
   }, [settings])
 
   const showToast = useCallback((text, onUndo) => {
@@ -156,7 +150,6 @@ export default function App() {
         <BottomBar
           state={state}
           dispatch={dispatch}
-          fonts={Object.keys(FONTS)}
           view={current}
           onTrash={() => toggleView('trash')}
           onArchive={() => toggleView('archive')}
