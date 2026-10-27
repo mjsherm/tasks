@@ -10,12 +10,12 @@ npm install
 npm run dev      # hot-reloading dev mode
 npm start        # build once and open the app
 npm run dist     # build an installable app into release/ (.dmg on macOS)
-npm test         # storage and hotkey tests
+npm test         # storage tests
 ```
 
 ## Using it
 
-- **Double-tap Shift** anywhere to bring Tasks up; double-tap again to put it away. macOS will ask once for Accessibility permission (System Settings > Privacy & Security > Accessibility), which it needs to see the Shift key while you're in other apps.
+- Press **⌥Space** anywhere to bring Tasks up, and again to put it away. If another app already uses ⌥Space, Tasks uses **⌃⌥Space** instead.
 - Type in **Add a task** and press Enter. Press `n` or `⌘N` anywhere on the list to jump there. A half-typed task is saved too.
 - Click the circle to finish a task. Drag the dots on the left of a row to reorder. Hover a row and click × to delete it.
 - Hover **Done** and click **Archive all** to clear finished tasks away. **Archive** in the bottom bar shows them, grouped by day; you can open, restore or delete any of them.

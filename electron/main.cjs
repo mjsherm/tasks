@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, globalShortcut, ipcMain, shell } = require('electron')
 const path = require('path')
 const { Store } = require('./store.cjs')
-const { watchDoubleShift } = require('./hotkey.cjs')
+const { registerToggle } = require('./hotkey.cjs')
 
 // Two copies writing the same file is the easiest way to lose data.
 if (!app.requestSingleInstanceLock()) app.quit()
@@ -9,7 +9,7 @@ if (!app.requestSingleInstanceLock()) app.quit()
 let win
 let store
 let quitting = false
-let stopHotkey = () => {}
+
 
 function createWindow() {
   const { theme } = store.load().settings
@@ -37,7 +37,7 @@ function createWindow() {
 
   win.once('ready-to-show', () => win.show())
 
-  // Closing just hides the window so it comes back instantly on double-Shift.
+  // Closing just hides the window so it comes back instantly on the shortcut.
   win.on('close', (e) => {
     if (quitting || process.env.TASKS_E2E) return
     e.preventDefault()
@@ -103,7 +103,7 @@ app.whenReady().then(() => {
   ipcMain.handle('app:toggle-fullscreen', () => win && win.setFullScreen(!win.isFullScreen()))
 
   createWindow()
-  if (!process.env.TASKS_E2E || process.env.TASKS_HOTKEY) stopHotkey = watchDoubleShift(toggleWindow, path.join(store.dir, 'hotkey.log'))
+  registerToggle(toggleWindow)
   // Dock click: macOS already brings the app forward; just make sure the
   // window is showing.
   app.on('activate', () => showWindow())
@@ -111,5 +111,5 @@ app.whenReady().then(() => {
 
 app.on('second-instance', () => showWindow())
 app.on('before-quit', () => { quitting = true })
-app.on('will-quit', () => stopHotkey())
+app.on('will-quit', () => globalShortcut.unregisterAll())
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
