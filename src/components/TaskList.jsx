@@ -3,6 +3,7 @@ import { AnimatePresence, LayoutGroup, Reorder, motion } from 'motion/react'
 import TaskRow from './TaskRow.jsx'
 import ProjectSwitcher from './ProjectSwitcher.jsx'
 import TagMenu, { menuKeys } from './TagMenu.jsx'
+import { api } from '../api.js'
 import { parseTitle, tagAtCaret, suggest, displayName } from '../projects.js'
 
 const PROMPTS = [
@@ -101,6 +102,13 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
     if (empty) input.current?.focus()
     const onKey = (e) => {
       if (!input.current?.offsetParent) return
+      // Escape on the list hides the app, same as pressing ⌥Space again.
+      if (e.key === 'Escape') {
+        if (e.defaultPrevented || document.querySelector('.type-panel, .tag-menu')) return
+        document.activeElement?.blur?.()
+        api.hide()
+        return
+      }
       const el = document.activeElement
       const typing = /INPUT|TEXTAREA/.test(el?.tagName) || el?.isContentEditable
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
@@ -157,7 +165,7 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
           placeholder={filter ? `Add to ${displayName(filter)}` : empty ? prompt : 'Add a task'}
           onChange={(e) => change(e.target.value, e.target.selectionStart)}
           onKeyDown={(e) => {
-            if (tag && e.key === 'Escape') { setTag(null); return }
+            if (tag && e.key === 'Escape') { e.preventDefault(); setTag(null); return }
             // Enter finishes the tag and adds the task in one go; Tab only
             // completes the tag so you can keep typing.
             if (tag && e.key === 'Enter' && items.length) {
@@ -169,7 +177,6 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
             }
             if (tag && menuKeys(e, items, index, setIndex, pick)) { e.preventDefault(); return }
             if (e.key === 'Enter') submit()
-            if (e.key === 'Escape') e.currentTarget.blur()
           }}
           onBlur={() => setTag(null)}
           spellCheck

@@ -6,6 +6,7 @@ const browserApi = {
   load: async () => JSON.parse(localStorage.getItem(KEY) || 'null'),
   save: async (json) => localStorage.setItem(KEY, json),
   saveSync: (json) => localStorage.setItem(KEY, json),
+  hide: async () => {},
   toggleFullscreen: async () => {
     if (document.fullscreenElement) document.exitFullscreen()
     else document.documentElement.requestFullscreen()

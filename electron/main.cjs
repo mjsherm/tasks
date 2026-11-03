@@ -103,6 +103,7 @@ app.whenReady().then(() => {
   ipcMain.on('store:save-sync', (e, json) => {
     try { store.save(json); e.returnValue = true } catch (err) { console.error(err); e.returnValue = false }
   })
+  ipcMain.handle('app:hide', () => hideWindow())
   ipcMain.handle('app:toggle-fullscreen', () => win && win.setFullScreen(!win.isFullScreen()))
 
   createWindow()

@@ -17,6 +17,7 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
       if (e.key !== 'Escape') return
       const el = document.activeElement
       if (document.querySelector('.slash-menu, .type-panel') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return
+      e.preventDefault() // so the list's Esc-to-hide doesn't also fire
       onBack()
     }
     window.addEventListener('keydown', onKey, true)
