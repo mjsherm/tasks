@@ -7,6 +7,16 @@ import { StarIcon } from './TaskRow.jsx'
 const fmt = (ms) =>
   new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
+function atLineStart(editor) {
+  const el = document.activeElement
+  if (el && /INPUT|TEXTAREA/.test(el.tagName)) return el.selectionStart === 0 && el.selectionEnd === 0
+  if (el?.isContentEditable && editor) {
+    const { empty, $from } = editor.state.selection
+    return empty && $from.parentOffset === 0
+  }
+  return true
+}
+
 export default function TaskDetail({ task, projects, dispatch, onBack, backLabel = 'Tasks' }) {
   const title = useRef(null)
   const editor = useRef(null)
@@ -15,6 +25,14 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
     // Capture phase: the editor swallows Escape, so listen before it does.
     // Escape still closes an open slash menu or link box first.
     const onKey = (e) => {
+      // ⌘[ always goes back. ⌘← goes back too, unless the caret is in text
+      // and not yet at the start of its line (then it moves the caret first).
+      if (e.metaKey && !e.shiftKey && !e.altKey && (e.key === '[' || e.key === 'ArrowLeft')) {
+        if (e.key === 'ArrowLeft' && !atLineStart(editor.current)) return
+        e.preventDefault()
+        onBack()
+        return
+      }
       if (e.key !== 'Escape') return
       const el = document.activeElement
       if (document.querySelector('.slash-menu, .type-panel') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return

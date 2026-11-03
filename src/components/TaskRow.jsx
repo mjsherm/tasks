@@ -81,9 +81,6 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
       {showProject && task.project && (
         <span className="row-tag">
           <button type="button" className="row-tag-name" title={`Show #${task.project}`} onClick={() => onFilter(task.project)}>{task.project}</button>
-          <button type="button" className="tag-clear" title="Remove from project" aria-label="Remove from project" onClick={() => dispatch({ type: 'update', id: task.id, patch: { project: null } })}>
-            <svg viewBox="0 0 12 12" width="7" height="7"><path d="M2 2l8 8M10 2l-8 8" /></svg>
-          </button>
         </span>
       )}
       {!task.done && (

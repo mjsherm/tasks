@@ -23,7 +23,7 @@ npm test         # storage tests
 - Type **#project** in a task to tag it (a menu suggests existing projects; Enter adds the task, Tab just completes the tag). The projects appear at the top: click one to see only its tasks, and new tasks you add there join it. Hover a tag for × to remove it, or hover a project at the top to clear it from every task (with Undo). Inside a task, click its #tag to move it.
 - Hover **Done** and click **Archive all** to clear finished tasks away. **Archive** in the bottom bar shows them, grouped by day; you can open, restore or delete any of them.
 - Paste a Slack, Gmail or Google Drive link (in a title or in the notes) and it shows as a small grey logo you can click. `⌘`-click opens any other link in the notes.
-- Click a task's title to open it. Type `/` in the notes for headings, to-do lists, quotes, code and dividers; select text for bold, italic, strike, code and links. Markdown shortcuts (`#`, `-`, `[]`, `>`) work too. `Esc` goes back.
+- Click a task's title to open it. Type `/` in the notes for headings, to-do lists, quotes, code and dividers; select text for bold, italic, strike, code and links. Markdown shortcuts (`#`, `-`, `[]`, `>`) work too. `Esc`, `⌘[` or `⌘←` goes back (in text, `⌘←` first moves to the start of the line).
 - Deleted tasks go to Trash for 30 days, and the toast offers Undo.
 - The bottom bar's font control (e.g. "Lato · 18") opens a Type panel: size slider, fonts (including any font installed on your Mac), line spacing and column width, all live. It also has light or dark, and fullscreen. It fades while you type and returns when you move the mouse.
 
