@@ -55,6 +55,7 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
         </Reorder.Group>
 
         <NewTask dispatch={dispatch} initialDraft={initialDraft} onDraft={onDraft} empty={open.length === 0} projects={projects} filter={filter} />
+        <CaptureBar dispatch={dispatch} projects={projects} filter={filter} />
 
         <AnimatePresence initial={false}>
           {showDone && done.length > 0 && (
@@ -89,14 +90,10 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
 }
 
 // The add box keeps its own text, so typing re-renders only this input.
-// Typing #name tags the task with a project; a menu suggests existing ones.
 const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, projects, filter }) {
   const [draft, setDraft] = useState(initialDraft)
-  const [tag, setTag] = useState(null)
-  const [index, setIndex] = useState(0)
   const input = useRef(null)
   const prompt = useMemo(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)], [])
-  const items = tag ? suggest(projects, tag.query) : []
 
   useEffect(() => {
     if (empty) input.current?.focus()
@@ -104,7 +101,7 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
       if (!input.current?.offsetParent) return
       // Escape on the list hides the app, same as pressing ⌥Space again.
       if (e.key === 'Escape') {
-        if (e.defaultPrevented || document.querySelector('.type-panel, .tag-menu')) return
+        if (e.defaultPrevented || document.querySelector('.type-panel, .tag-menu, .capture')) return
         document.activeElement?.blur?.()
         api.hide()
         return
@@ -119,72 +116,206 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
         input.current?.focus()
       }
     }
+    // Coming back to the window with an empty add box focused would swallow
+    // Space/Enter, which should open the capture bar instead.
+    const onFocus = () => {
+      if (document.activeElement === input.current && !input.current.value) input.current.blur()
+    }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [])
 
-  const change = (value, caret = value.length) => {
-    setDraft(value)
-    onDraft(value)
-    const next = tagAtCaret(value, caret)
-    setTag(next)
-    if (!next) setIndex(0)
-  }
-
-  const pick = (p) => {
-    const before = draft.slice(0, tag.start) + '#' + p.name + ' '
-    const value = before + draft.slice(tag.start + 1 + tag.query.length).replace(/^\s+/, '')
-    change(value, before.length)
-    setTag(null)
-    requestAnimationFrame(() => input.current?.setSelectionRange(before.length, before.length))
-  }
-
-  const submit = (text = draft) => {
+  const change = (value) => { setDraft(value); onDraft(value) }
+  const submit = (text) => {
     const { title, project } = parseTitle(text)
     if (!title) return
     dispatch({ type: 'add', title, project: project || filter })
     change('')
   }
 
-  // Line the menu up under the "#" being typed.
-  const menuLeft = useMemo(() => {
-    if (!tag || !input.current) return 0
-    const ctx = (measure ||= document.createElement('canvas')).getContext('2d')
-    ctx.font = getComputedStyle(input.current).font
-    return Math.round(ctx.measureText(draft.slice(0, tag.start)).width)
-  }, [tag?.start, draft])
-
   return (
     <motion.div layout="position" className="new-row" transition={layoutSpring}>
       <span className="new-plus" aria-hidden>+</span>
-      <div className="new-field">
-        <input
-          ref={input}
-          className="new-input"
-          value={draft}
-          placeholder={filter ? `Add to ${displayName(filter)}` : empty ? prompt : 'Add a task'}
-          onChange={(e) => change(e.target.value, e.target.selectionStart)}
-          onKeyDown={(e) => {
-            if (tag && e.key === 'Escape') { e.preventDefault(); setTag(null); return }
-            // Enter finishes the tag and adds the task in one go; Tab only
-            // completes the tag so you can keep typing.
-            if (tag && e.key === 'Enter' && items.length) {
-              e.preventDefault()
-              const p = items[index]
-              submit(draft.slice(0, tag.start) + '#' + p.name + ' ' + draft.slice(tag.start + 1 + tag.query.length))
-              setTag(null)
-              return
-            }
-            if (tag && menuKeys(e, items, index, setIndex, pick)) { e.preventDefault(); return }
-            if (e.key === 'Enter') submit()
-          }}
-          onBlur={() => setTag(null)}
-          spellCheck
-        />
-        {tag && <TagMenu items={items} index={index} onHover={setIndex} onPick={pick} style={{ position: 'absolute', left: menuLeft, top: '2em' }} />}
-      </div>
+      <TaskField
+        inputRef={input}
+        value={draft}
+        onChange={change}
+        onSubmit={submit}
+        projects={projects}
+        placeholder={filter ? `Add to ${displayName(filter)}` : empty ? prompt : 'Add a task'}
+      />
     </motion.div>
   )
 })
+
+// Space or Enter on the list (when nothing is being typed) opens a floating
+// bar to add a task, then gets out of the way.
+const CaptureBar = memo(function CaptureBar({ dispatch, projects, filter }) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [added, setAdded] = useState(null)
+  const anchor = useRef(null)
+  const input = useRef(null)
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (open || !anchor.current?.offsetParent) return
+      if (e.key !== ' ' && e.key !== 'Enter') return
+      if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return
+      const el = document.activeElement
+      if (/INPUT|TEXTAREA|SELECT/.test(el?.tagName) || el?.isContentEditable) return
+      if (document.querySelector('.type-panel')) return
+      e.preventDefault()
+      el?.blur?.()
+      setAdded(null)
+      setOpen(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  useEffect(() => {
+    if (!added) return
+    const t = setTimeout(() => setAdded(null), 1400)
+    return () => clearTimeout(t)
+  }, [added])
+
+  const submit = (value) => {
+    const { title, project } = parseTitle(value)
+    if (!title) return
+    const into = project || filter
+    dispatch({ type: 'add', title, project: into })
+    setText('')
+    setOpen(false)
+    setAdded({ key: Date.now(), label: into ? `Added to ${displayName(into)}` : 'Added' })
+  }
+
+  return (
+    <>
+      <span ref={anchor} className="capture-anchor" aria-hidden />
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="scrim"
+            className="capture-scrim"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onMouseDown={() => setOpen(false)}
+          />
+        )}
+        {open && (
+          <motion.div
+            key="bar"
+            className="capture"
+            initial={{ opacity: 0, y: -12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.98, transition: { duration: 0.14 } }}
+            transition={{ type: 'spring', stiffness: 600, damping: 40 }}
+            onAnimationStart={() => input.current?.focus()}
+          >
+            <span className="new-plus" aria-hidden>+</span>
+            <TaskField
+              inputRef={input}
+              autoFocus
+              value={text}
+              onChange={setText}
+              onSubmit={submit}
+              onEscape={() => setOpen(false)}
+              projects={projects}
+              placeholder={filter ? `Add to ${displayName(filter)}` : 'Add a task'}
+            />
+            <span className="capture-hint">↵ save · esc close</span>
+          </motion.div>
+        )}
+        {added && (
+          <motion.div
+            key={added.key}
+            className="capture-pill"
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, transition: { duration: 0.2 } }}
+            transition={{ type: 'spring', stiffness: 500, damping: 34 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" aria-hidden>
+              <circle cx="10" cy="10" r="9" fill="currentColor" />
+              <path d="M6.2 10.4l2.6 2.6 5-5.4" fill="none" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {added.label}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+})
+
+// One line of task text with #project suggestions. Enter finishes a tag and
+// adds the task in one go; Tab only completes the tag so you can keep typing.
+function TaskField({ inputRef, value, onChange, onSubmit, onEscape, projects, placeholder, autoFocus }) {
+  const [tag, setTag] = useState(null)
+  const [index, setIndex] = useState(0)
+  const items = tag ? suggest(projects, tag.query) : []
+
+  const change = (next, caret = next.length) => {
+    onChange(next)
+    const t = tagAtCaret(next, caret)
+    setTag(t)
+    if (!t) setIndex(0)
+  }
+
+  const pick = (p) => {
+    const before = value.slice(0, tag.start) + '#' + p.name + ' '
+    const next = before + value.slice(tag.start + 1 + tag.query.length).replace(/^\s+/, '')
+    change(next, before.length)
+    setTag(null)
+    requestAnimationFrame(() => inputRef.current?.setSelectionRange(before.length, before.length))
+  }
+
+  const submit = (text) => {
+    onSubmit(text)
+    setTag(null)
+  }
+
+  // Line the menu up under the "#" being typed.
+  const menuLeft = useMemo(() => {
+    if (!tag || !inputRef.current) return 0
+    const ctx = (measure ||= document.createElement('canvas')).getContext('2d')
+    ctx.font = getComputedStyle(inputRef.current).font
+    return Math.round(ctx.measureText(value.slice(0, tag.start)).width)
+  }, [tag?.start, value])
+
+  return (
+    <div className="new-field">
+      <input
+        ref={inputRef}
+        className="new-input"
+        value={value}
+        autoFocus={autoFocus}
+        placeholder={placeholder}
+        onChange={(e) => change(e.target.value, e.target.selectionStart)}
+        onKeyDown={(e) => {
+          if (tag && e.key === 'Escape') { e.preventDefault(); setTag(null); return }
+          if (tag && e.key === 'Enter' && items.length) {
+            e.preventDefault()
+            const p = items[index]
+            submit(value.slice(0, tag.start) + '#' + p.name + ' ' + value.slice(tag.start + 1 + tag.query.length))
+            return
+          }
+          if (tag && menuKeys(e, items, index, setIndex, pick)) { e.preventDefault(); return }
+          if (e.key === 'Enter') { e.preventDefault(); submit(value) }
+          if (e.key === 'Escape' && onEscape) { e.preventDefault(); onEscape() }
+        }}
+        onBlur={() => setTag(null)}
+        spellCheck
+      />
+      {tag && <TagMenu items={items} index={index} onHover={setIndex} onPick={pick} style={{ position: 'absolute', left: menuLeft, top: '2em' }} />}
+    </div>
+  )
+}
 
 export default memo(TaskList)
