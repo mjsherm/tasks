@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useRef, useMemo, useState } from 'react'
 import { AnimatePresence, LayoutGroup, Reorder, motion } from 'motion/react'
-import TaskRow from './TaskRow.jsx'
+import TaskRow, { hovered } from './TaskRow.jsx'
 import ProjectSwitcher from './ProjectSwitcher.jsx'
 import TagMenu, { menuKeys } from './TagMenu.jsx'
 import { api } from '../api.js'
@@ -25,7 +25,24 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
     () => visible.filter((t) => t.done).sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0)),
     [visible],
   )
-  const openIds = useMemo(() => open.map((t) => t.id), [open])
+  const todays = useMemo(() => open.filter((t) => t.today), [open])
+  const later = useMemo(() => (todays.length ? open.filter((t) => !t.today) : open), [open, todays])
+  const todayIds = useMemo(() => todays.map((t) => t.id), [todays])
+  const laterIds = useMemo(() => later.map((t) => t.id), [later])
+
+  // T stars (or unstars) the task under the pointer.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 't' || e.metaKey || e.ctrlKey || e.altKey || !hovered.id) return
+      const el = document.activeElement
+      if (/INPUT|TEXTAREA/.test(el?.tagName) || el?.isContentEditable) return
+      if (!document.querySelector('.list-page:not([hidden])') || document.querySelector('.capture')) return
+      e.preventDefault()
+      dispatch({ type: 'toggleToday', id: hovered.id })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [dispatch])
   const today = useMemo(() => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }), [])
 
   return (
@@ -40,15 +57,33 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
       </header>
 
       <LayoutGroup>
-        <Reorder.Group
-          as="ul"
-          axis="y"
-          className="rows"
-          values={openIds}
-          onReorder={(ids) => dispatch({ type: 'reorder', ids })}
-        >
+        <AnimatePresence initial={false}>
+          {todays.length > 0 && (
+            <motion.div key="today-label" layout="position" transition={layoutSpring} className="section-label today-label"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }}>
+              <span>Today</span>
+              <span className="label-count">{todays.length} left</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <Reorder.Group as="ul" axis="y" className="rows" values={todayIds} onReorder={(ids) => dispatch({ type: 'reorder', ids })}>
           <AnimatePresence initial={false}>
-            {open.map((t) => (
+            {todays.map((t) => (
+              <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
+            ))}
+          </AnimatePresence>
+        </Reorder.Group>
+        <AnimatePresence initial={false}>
+          {todays.length > 0 && later.length > 0 && (
+            <motion.div key="later-label" layout="position" transition={layoutSpring} className="section-label later-label"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }}>
+              <span>Later</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <Reorder.Group as="ul" axis="y" className="rows" values={laterIds} onReorder={(ids) => dispatch({ type: 'reorder', ids })}>
+          <AnimatePresence initial={false}>
+            {later.map((t) => (
               <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
             ))}
           </AnimatePresence>
@@ -130,10 +165,10 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
   }, [])
 
   const change = (value) => { setDraft(value); onDraft(value) }
-  const submit = (text) => {
+  const submit = (text, today) => {
     const { title, project } = parseTitle(text)
     if (!title) return
-    dispatch({ type: 'add', title, project: project || filter })
+    dispatch({ type: 'add', title, project: project || filter, today })
     change('')
   }
 
@@ -184,14 +219,14 @@ const CaptureBar = memo(function CaptureBar({ dispatch, projects, filter }) {
     return () => clearTimeout(t)
   }, [added])
 
-  const submit = (value) => {
+  const submit = (value, today) => {
     const { title, project } = parseTitle(value)
     if (!title) return
     const into = project || filter
-    dispatch({ type: 'add', title, project: into })
+    dispatch({ type: 'add', title, project: into, today })
     setText('')
     setOpen(false)
-    setAdded({ key: Date.now(), label: into ? `Added to ${displayName(into)}` : 'Added' })
+    setAdded({ key: Date.now(), label: today ? 'Added to Today' : into ? `Added to ${displayName(into)}` : 'Added' })
   }
 
   return (
@@ -230,7 +265,7 @@ const CaptureBar = memo(function CaptureBar({ dispatch, projects, filter }) {
               projects={projects}
               placeholder={filter ? `Add to ${displayName(filter)}` : 'Add a task'}
             />
-            <span className="capture-hint">↵ save · esc close</span>
+            <span className="capture-hint">↵ save · ⌘↵ today · esc close</span>
           </motion.div>
         )}
         {added && (
@@ -276,8 +311,8 @@ function TaskField({ inputRef, value, onChange, onSubmit, onEscape, projects, pl
     requestAnimationFrame(() => inputRef.current?.setSelectionRange(before.length, before.length))
   }
 
-  const submit = (text) => {
-    onSubmit(text)
+  const submit = (text, today) => {
+    onSubmit(text, today)
     setTag(null)
   }
 
@@ -303,11 +338,11 @@ function TaskField({ inputRef, value, onChange, onSubmit, onEscape, projects, pl
           if (tag && e.key === 'Enter' && items.length) {
             e.preventDefault()
             const p = items[index]
-            submit(value.slice(0, tag.start) + '#' + p.name + ' ' + value.slice(tag.start + 1 + tag.query.length))
+            submit(value.slice(0, tag.start) + '#' + p.name + ' ' + value.slice(tag.start + 1 + tag.query.length), e.metaKey || e.ctrlKey)
             return
           }
           if (tag && menuKeys(e, items, index, setIndex, pick)) { e.preventDefault(); return }
-          if (e.key === 'Enter') { e.preventDefault(); submit(value) }
+          if (e.key === 'Enter') { e.preventDefault(); submit(value, e.metaKey || e.ctrlKey) }
           if (e.key === 'Escape' && onEscape) { e.preventDefault(); onEscape() }
         }}
         onBlur={() => setTag(null)}

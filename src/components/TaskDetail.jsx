@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import Checkbox from './Checkbox.jsx'
 import Editor from './Editor.jsx'
 import ProjectField from './ProjectField.jsx'
+import { StarIcon } from './TaskRow.jsx'
 
 const fmt = (ms) =>
   new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
@@ -63,6 +64,14 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
       <div className="meta">
         {task.createdAt ? `Created ${fmt(task.createdAt)}` : 'Task'}
         {task.done && task.completedAt ? ` · Done ${fmt(task.completedAt)}` : ''}
+        {!task.done && (
+          <>
+            <span className="meta-sep">·</span>
+            <button type="button" className={'today-toggle' + (task.today ? ' is-on' : '')} onClick={() => dispatch({ type: 'toggleToday', id: task.id })}>
+              <StarIcon size={11} /> Today
+            </button>
+          </>
+        )}
         <ProjectField
           project={task.project}
           projects={projects}

@@ -4,6 +4,15 @@ import Checkbox from './Checkbox.jsx'
 import LinkChip from './LinkChip.jsx'
 import { serviceLinks, splitTitle } from '../links.js'
 
+// The row under the pointer, so T can star it without a click.
+export const hovered = { id: null }
+
+export const StarIcon = ({ size = 14 }) => (
+  <svg viewBox="0 0 16 16" width={size} height={size} aria-hidden>
+    <path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z" />
+  </svg>
+)
+
 const spring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
 function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onFilter }) {
@@ -42,6 +51,8 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, transition: { duration: 0.12 } }}
       transition={spring}
+      onPointerEnter={() => { hovered.id = task.id }}
+      onPointerLeave={() => { if (hovered.id === task.id) hovered.id = null }}
     >
       {draggable && (
         <span
@@ -74,6 +85,17 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
             <svg viewBox="0 0 12 12" width="7" height="7"><path d="M2 2l8 8M10 2l-8 8" /></svg>
           </button>
         </span>
+      )}
+      {!task.done && (
+        <button
+          type="button"
+          className={'row-star' + (task.today ? ' is-on' : '')}
+          title={task.today ? 'Remove from Today (T)' : 'Add to Today (T)'}
+          aria-label={task.today ? 'Remove from Today' : 'Add to Today'}
+          onClick={() => dispatch({ type: 'update', id: task.id, patch: { today: !task.today } })}
+        >
+          <StarIcon />
+        </button>
       )}
       <button type="button" className="row-delete" title="Delete" aria-label="Delete task" onClick={() => onDelete(task.id)}>
         <svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 2l8 8M10 2l-8 8" /></svg>

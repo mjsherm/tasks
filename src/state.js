@@ -46,6 +46,7 @@ export function reducer(state, action) {
         id: action.id || newId(),
         title: action.title,
         project: action.project || null,
+        today: !!action.today,
         done: false,
         body: null,
         createdAt: now,
@@ -73,6 +74,8 @@ export function reducer(state, action) {
         updatedAt: now,
       }))
     }
+    case 'toggleToday':
+      return mapTask(action.id, (t) => (t.done ? t : { ...t, today: !t.today, updatedAt: now }))
     case 'update':
       return mapTask(action.id, (t) => ({ ...t, ...action.patch, updatedAt: now }))
     case 'reorder': {

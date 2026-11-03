@@ -17,6 +17,7 @@ npm test         # storage tests
 
 - Press **⌥Space** anywhere to bring Tasks up, and again (or `Esc` on the list) to put it away. If another app already uses ⌥Space, Tasks uses **⌃⌥Space** instead.
 - With Tasks open, press **Space** or **Enter** to pop up a quick add bar. Type the task (with a #project if you like) and press Enter; Esc or a click outside closes it. Clicking "Add a task" still works inline.
+- Hover a task and click the star (or press **T**) to put it in **Today** at the top. In the quick add bar, **⌘Enter** adds straight to Today. Inside a task, click "Today" under the title.
 - Type in **Add a task** and press Enter. Press `n` or `⌘N` anywhere on the list to jump there. A half-typed task is saved too.
 - Click the circle to finish a task. Drag the dots on the left of a row to reorder. Hover a row and click × to delete it.
 - Type **#project** in a task to tag it (a menu suggests existing projects; Enter adds the task, Tab just completes the tag). The projects appear at the top: click one to see only its tasks, and new tasks you add there join it. Hover a tag for × to remove it, or hover a project at the top to clear it from every task (with Undo). Inside a task, click its #tag to move it.

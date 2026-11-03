@@ -373,3 +373,23 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
   background: var(--ink); color: var(--bg); font-size: 13px;
   padding: 8px 14px; border-radius: 999px; box-shadow: var(--lift);
 }
+
+/* Today */
+.today-label { color: var(--soft); }
+.label-count { text-transform: none; letter-spacing: 0.02em; font-size: 1.05em; color: var(--faint); }
+.later-label { margin-top: 22px; }
+.row-star {
+  flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px;
+  fill: none; stroke: var(--faint); stroke-width: 1.4; stroke-linejoin: round;
+  opacity: 0; transition: opacity 0.15s var(--ease), stroke 0.15s var(--ease), fill 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+.row:hover .row-star { opacity: 1; }
+.row-star:hover { stroke: var(--ink); background: var(--hover); }
+.row-star.is-on { fill: var(--ink); stroke: var(--ink); }
+.today-toggle {
+  display: inline-flex; align-items: center; gap: 4px; color: var(--faint);
+  fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round;
+  transition: color 0.15s var(--ease);
+}
+.today-toggle:hover { color: var(--ink); }
+.today-toggle.is-on { color: var(--ink); fill: currentColor; }
