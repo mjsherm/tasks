@@ -1,8 +1,12 @@
-import React, { memo, useState, useEffect, useMemo, useRef } from 'react'
+import React, { memo, useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Reorder, motion, useDragControls } from 'motion/react'
 import Checkbox from './Checkbox.jsx'
 import LinkChip from './LinkChip.jsx'
 import { serviceLinks, splitTitle } from '../links.js'
+import { driftOut, driftIn, dissolve } from '../fx.js'
+
+// Rows that should drift in when they next mount (id -> landing in Done?).
+const arriving = new Map()
 
 // The row under the pointer, so T can star it without a click.
 export const hovered = { id: null }
@@ -17,19 +21,29 @@ const spring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
 function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onFilter }) {
   const controls = useDragControls()
-  // Show the check landing before the row moves to the done section.
-  const [pending, setPending] = useState(null)
-  const timer = useRef(null)
-  useEffect(() => () => clearTimeout(timer.current), [])
+  const ref = useRef(null)
+  // A row on its way out (drifting or dissolving) drops its layoutId so it
+  // doesn't fly across the list; the new copy drifts in where it lands.
+  const [leaving, setLeaving] = useState(false)
+  const [landing, setLanding] = useState(() => arriving.get(task.id))
 
-  const checked = pending ?? task.done
+  useLayoutEffect(() => {
+    if (landing === undefined) return
+    arriving.delete(task.id)
+    driftIn(ref.current, { done: landing }).then(() => setLanding(undefined))
+  }, [])
+
   const toggle = () => {
-    if (pending !== null) return
-    setPending(!task.done)
-    timer.current = setTimeout(() => {
-      setPending(null)
-      dispatch({ type: 'toggle', id: task.id })
-    }, 300)
+    if (leaving) return
+    setLeaving(true)
+    arriving.set(task.id, !task.done)
+    driftOut(ref.current).then(() => dispatch({ type: 'toggle', id: task.id }))
+  }
+
+  const remove = () => {
+    if (leaving) return
+    setLeaving(true)
+    dissolve(ref.current).then(() => onDelete(task.id))
   }
 
   const parts = useMemo(() => splitTitle(task.title || ''), [task.title])
@@ -45,11 +59,12 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
     <Comp
       {...dragProps}
       layout="position"
-      layoutId={task.id}
-      className={'row' + (checked ? ' is-done' : '')}
-      initial={{ opacity: 0, y: -4 }}
+      ref={ref}
+      layoutId={leaving || landing !== undefined ? undefined : task.id}
+      className={'row' + (task.done ? ' is-done' : '')}
+      initial={arriving.has(task.id) || landing !== undefined ? false : { opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, transition: { duration: 0.12 } }}
+      exit={{ opacity: 0, transition: { duration: leaving ? 0 : 0.12 } }}
       transition={spring}
       onPointerEnter={() => { hovered.id = task.id }}
       onPointerLeave={() => { if (hovered.id === task.id) hovered.id = null }}
@@ -68,7 +83,7 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
           </svg>
         </span>
       )}
-      <Checkbox checked={checked} onToggle={toggle} />
+      <Checkbox checked={task.done} onToggle={toggle} />
       <div className="row-title" role="button" tabIndex={0} onClick={() => onOpen(task.id)} onKeyDown={(e) => e.key === 'Enter' && onOpen(task.id)}>
         <span className={'strike' + (task.title ? '' : ' is-empty')}>
           {task.title
@@ -94,7 +109,7 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
           <StarIcon />
         </button>
       )}
-      <button type="button" className="row-delete" title="Delete" aria-label="Delete task" onClick={() => onDelete(task.id)}>
+      <button type="button" className="row-delete" title="Delete" aria-label="Delete task" onClick={remove}>
         <svg viewBox="0 0 12 12" width="10" height="10"><path d="M2 2l8 8M10 2l-8 8" /></svg>
       </button>
     </Comp>
