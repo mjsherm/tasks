@@ -26,6 +26,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${GITHUB_REF_NAME}"
-          case "$TAG" in v*) ;; *) TAG="v$(node -p 'require(\"./package.json\").version')" ;; esac
+          case "$TAG" in v*) ;; *) TAG="v$(node -p "require('./package.json').version")" ;; esac
           gh release create "$TAG" release/*.dmg --title "Tasks ${TAG#v}" --notes-file .github/release-notes.md || \
             gh release upload "$TAG" release/*.dmg --clobber
