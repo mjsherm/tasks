@@ -399,3 +399,4 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .row.fx-busy, .row.fx-busy:hover { background: transparent; }
 .row.fx-busy .row-delete, .row.fx-busy .row-star, .row.fx-busy .handle { opacity: 0 !important; pointer-events: none; }
 .row.fx-arriving .strike::after { transform: scaleX(0); }
+.row.fx-unstrike .strike::after { transform: scaleX(0); transition-duration: 0.26s; }

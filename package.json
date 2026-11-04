@@ -1,7 +1,7 @@
 {
   "name": "tasks",
   "productName": "Tasks",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "A very simple, fluid task list.",
   "author": "Matt",
@@ -50,7 +50,7 @@
         {
           "target": "dmg",
           "arch": [
-            "universal"
+            "arm64"
           ]
         }
       ],
@@ -88,6 +88,11 @@
         "height": 380
       }
     },
-    "artifactName": "Tasks-${version}.${ext}"
+    "artifactName": "Tasks-${version}.${ext}",
+    "electronLanguages": [
+      "en",
+      "en-GB",
+      "en-US"
+    ]
   }
 }

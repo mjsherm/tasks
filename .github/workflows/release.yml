@@ -1,4 +1,4 @@
-# Builds a Universal (Apple Silicon + Intel) DMG on GitHub's Mac runners and
+# Builds an Apple Silicon DMG on GitHub's Mac runners and
 # attaches it to a GitHub Release. Push a tag like v0.2.0 to cut a release.
 name: Release
 on:

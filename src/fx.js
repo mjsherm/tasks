@@ -83,9 +83,15 @@ async function scatterOut(row, pick) {
 }
 
 // Completing: the letters turn green and blow away out of the open list.
+// Unchecking a done task is the exact reverse: the line un-draws first, then
+// the letters warm to green and blow away.
 export async function driftOut(row) {
   if (!row || reduce()) return
   row.classList.add('fx-busy')
+  if (row.classList.contains('is-done')) {
+    row.classList.add('fx-unstrike')
+    await wait(260)
+  }
   await scatterOut(row, GREEN)
 }
 
