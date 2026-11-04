@@ -11,7 +11,8 @@
     "start": "vite build && electron .",
     "build": "vite build",
     "dist": "vite build && electron-builder",
-    "test": "node --test test/*.test.cjs test/*.test.mjs"
+    "test": "node --test test/*.test.cjs test/*.test.mjs",
+    "dist:mac": "vite build && electron-builder --mac --publish never"
   },
   "devDependencies": {
     "@floating-ui/dom": "^1.8.0",
@@ -46,9 +47,15 @@
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
-        "dmg",
-        "zip"
-      ]
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "identity": "-",
+      "hardenedRuntime": false
     },
     "win": {
       "target": "nsis"
@@ -61,6 +68,26 @@
       "output": "release"
     },
     "npmRebuild": false,
-    "icon": "build/icon.png"
+    "icon": "build/icon.png",
+    "dmg": {
+      "title": "Tasks",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 390,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "artifactName": "Tasks-${version}.${ext}"
   }
 }
