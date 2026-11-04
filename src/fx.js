@@ -71,14 +71,15 @@ async function scatterOut(row, pick) {
   }
   chars.forEach((c, i) => play(c, [{ color: getComputedStyle(c).color }, { color: colourAt(pick, i, n) }], { duration: 200, delay: i * Math.min(per, 7), easing: OUT }))
   await wait(80)
-  chars.forEach((c, i) => {
+  // Wait for every letter to finish: cutting this short is what made short
+  // titles vanish mid-flight (the row is removed as soon as this resolves).
+  await Promise.all(chars.map((c, i) => {
     const x = 6 + Math.random() * 14, y = -8 - Math.random() * 16, r = (Math.random() - 0.3) * 40
-    play(c, [
+    return play(c, [
       { transform: 'none', opacity: 1, filter: 'blur(0px)' },
       { transform: `translate(${x}px, ${y}px) rotate(${r}deg) scale(0.8)`, opacity: 0, filter: 'blur(1.5px)' },
-    ], { duration: 480, delay: i * per, easing: SCATTER })
-  })
-  await wait(n * per + 220)
+    ], { duration: 460, delay: i * per, easing: SCATTER })
+  }))
 }
 
 // Completing: the letters turn green and blow away out of the open list.
