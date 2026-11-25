@@ -3,6 +3,8 @@ import { Reorder, motion, useDragControls } from 'motion/react'
 import Checkbox from './Checkbox.jsx'
 import LinkChip from './LinkChip.jsx'
 import { serviceLinks, splitTitle } from '../links.js'
+import { docLinks, docTitle } from '../docs.js'
+import { DocIcon } from './DocLink.jsx'
 import { driftOut, driftIn, dissolve } from '../fx.js'
 
 // Rows that should drift in when they next mount (id -> landing in Done?).
@@ -19,7 +21,7 @@ export const StarIcon = ({ size = 14 }) => (
 
 const spring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
-function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onFilter }) {
+function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onFilter, docs, onOpenDoc }) {
   const controls = useDragControls()
   const ref = useRef(null)
   // A row on its way out (drifting or dissolving) drops its layoutId so it
@@ -48,6 +50,10 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
 
   const parts = useMemo(() => splitTitle(task.title || ''), [task.title])
   const links = useMemo(() => serviceLinks(task.body), [task.body])
+  const linkedDocs = useMemo(() => {
+    const ids = docLinks(task.body)
+    return ids.length && docs ? ids.map((id) => docs.find((d) => d.id === id)).filter(Boolean) : []
+  }, [task.body, docs])
   const hasNotes = useMemo(() => !!task.body && JSON.stringify(task.body).includes('"text"'), [task.body])
 
   const Comp = draggable ? Reorder.Item : motion.li
@@ -91,8 +97,13 @@ function TaskRow({ task, draggable, showProject, dispatch, onOpen, onDelete, onF
             : 'Untitled'}
         </span>
         {links.map((l) => <LinkChip key={l.href} {...l} />)}
-        {hasNotes && !links.length && <span className="notes-dot" title="Has notes" />}
+        {hasNotes && !links.length && !linkedDocs.length && <span className="notes-dot" title="Has notes" />}
       </div>
+      {linkedDocs.map((d) => (
+        <button key={d.id} type="button" className="row-doc" title="Open doc" onClick={(e) => { e.stopPropagation(); onOpenDoc?.(d.id) }}>
+          <DocIcon size={12} />{docTitle(d)}
+        </button>
+      ))}
       {showProject && task.project && (
         <span className="row-tag">
           <button type="button" className="row-tag-name" title={`Show #${task.project}`} onClick={() => onFilter(task.project)}>{task.project}</button>

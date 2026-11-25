@@ -1,6 +1,7 @@
 export const DEFAULT_STATE = {
   version: 1,
   tasks: [],
+  docs: [],
   archive: [],
   trash: [],
   draft: '',
@@ -19,10 +20,13 @@ export function hydrate(data) {
     ...DEFAULT_STATE,
     ...base,
     archive: base.archive || [],
+    docs: base.docs || [],
     trash: (base.trash || []).filter((t) => (t.deletedAt || 0) > cutoff),
     settings: { ...DEFAULT_STATE.settings, ...(base.settings || {}) },
   }
 }
+
+export const findDoc = (state, id) => state.docs.find((d) => d.id === id)
 
 export const findTask = (state, id) =>
   state.tasks.find((t) => t.id === id) || state.archive.find((t) => t.id === id)
@@ -97,9 +101,35 @@ export function reducer(state, action) {
         trash: [{ ...task, deletedAt: now }, ...state.trash],
       }
     }
+    case 'addDoc': {
+      const doc = {
+        id: action.id || newId(),
+        title: action.title || '',
+        project: action.project || null,
+        body: null,
+        createdAt: now,
+        updatedAt: now,
+      }
+      return { ...state, docs: [doc, ...state.docs] }
+    }
+    case 'updateDoc':
+      return { ...state, docs: state.docs.map((d) => (d.id === action.id ? { ...d, ...action.patch, updatedAt: now } : d)) }
+    case 'deleteDoc': {
+      const doc = findDoc(state, action.id)
+      if (!doc) return state
+      return {
+        ...state,
+        docs: state.docs.filter((d) => d.id !== action.id),
+        trash: [{ ...doc, kind: 'doc', deletedAt: now }, ...state.trash],
+      }
+    }
     case 'restore': {
       const task = state.trash.find((t) => t.id === action.id)
       if (!task) return state
+      if (task.kind === 'doc') {
+        const { kind, deletedAt, ...doc } = task
+        return { ...state, trash: state.trash.filter((t) => t.id !== action.id), docs: [doc, ...state.docs] }
+      }
       const restored = strip(task)
       if (task.archivedAt) {
         return {
@@ -139,13 +169,14 @@ export function reducer(state, action) {
         ...state,
         tasks: state.tasks.map(clear),
         archive: state.archive.map(clear),
+        docs: state.docs.map(clear),
         settings: state.settings.project === action.name ? { ...state.settings, project: null } : state.settings,
       }
     }
     case 'restoreProject': {
       const ids = new Set(action.ids)
       const put = (t) => (ids.has(t.id) ? { ...t, project: action.name } : t)
-      return { ...state, tasks: state.tasks.map(put), archive: state.archive.map(put) }
+      return { ...state, tasks: state.tasks.map(put), archive: state.archive.map(put), docs: state.docs.map(put) }
     }
     case 'setting':
       return { ...state, settings: { ...state.settings, [action.key]: action.value } }

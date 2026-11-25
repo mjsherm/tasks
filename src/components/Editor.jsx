@@ -7,6 +7,7 @@ import { TaskList, TaskItem } from '@tiptap/extension-list'
 import { Extension } from '@tiptap/core'
 import { SlashCommand } from './SlashMenu.jsx'
 import { ServiceLinks } from './serviceLinks.js'
+import { DocLink } from './DocLink.jsx'
 
 // The editor owns its document after mount; React only hears about changes
 // through onChange, so typing never re-renders this component.
@@ -29,6 +30,7 @@ function Editor({ content, onChange, editorRef, onExitTop }) {
       TaskItem.configure({ nested: true }),
       SlashCommand,
       ServiceLinks,
+      DocLink,
       // Arrow up / backspace at the very top hands focus back to the title.
       Extension.create({
         name: 'exitTop',

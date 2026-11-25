@@ -53,19 +53,19 @@ export default function BottomBar({ state, dispatch, view, onTrash, onArchive, o
             <Dot />
           </>
         )}
-        {view === 'task' && onDelete && (
+        {(view === 'task' || view === 'doc') && onDelete && (
           <>
             <button type="button" onClick={onDelete}>Delete</button>
             <Dot />
           </>
         )}
-        {view !== 'task' && (archive.length > 0 || view === 'archive') && (
+        {view !== 'task' && view !== 'doc' && (archive.length > 0 || view === 'archive') && (
           <>
             <button type="button" className={view === 'archive' ? 'is-active' : ''} onClick={onArchive}>Archive</button>
             <Dot />
           </>
         )}
-        {view !== 'task' && (trash.length > 0 || view === 'trash') && (
+        {view !== 'task' && view !== 'doc' && (trash.length > 0 || view === 'trash') && (
           <>
             <button type="button" className={view === 'trash' ? 'is-active' : ''} onClick={onTrash}>Trash</button>
             <Dot />

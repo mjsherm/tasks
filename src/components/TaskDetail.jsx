@@ -35,7 +35,7 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
       }
       if (e.key !== 'Escape') return
       const el = document.activeElement
-      if (document.querySelector('.slash-menu, .type-panel') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return
+      if (document.querySelector('.slash-menu, .type-panel, .palette') || el?.classList.contains('bubble-input') || el?.classList.contains('project-input')) return
       e.preventDefault() // so the list's Esc-to-hide doesn't also fire
       onBack()
     }
@@ -73,7 +73,10 @@ export default function TaskDetail({ task, projects, dispatch, onBack, backLabel
           onKeyDown={(e) => {
             if (e.key === 'Enter' || (e.key === 'ArrowDown' && e.currentTarget.selectionStart === task.title.length)) {
               e.preventDefault()
-              editor.current?.commands.focus('start')
+              // Focus now, not on the next frame, so a fast first keystroke
+            // lands in the body instead of the title.
+            editor.current?.view.dom.focus()
+            editor.current?.commands.focus('start')
             }
           }}
         />
