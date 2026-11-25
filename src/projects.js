@@ -19,16 +19,22 @@ export function tagAtCaret(text, caret) {
   return m ? { query: m[1].toLowerCase(), start: caret - m[1].length - 1 } : null
 }
 
-// Every project in use, most used first, with open-task counts.
-export function listProjects(tasks, archive = []) {
+// Every project in use, most used first, with open-task and doc counts.
+export function listProjects(tasks, archive = [], docs = []) {
   const counts = new Map()
   for (const t of tasks) if (t.project) counts.set(t.project, (counts.get(t.project) || 0) + (t.done ? 0 : 1))
   for (const t of archive) if (t.project && !counts.has(t.project)) counts.set(t.project, 0)
-  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([name, open]) => ({ name, open }))
+  const docCounts = new Map()
+  for (const d of docs) if (d.project) {
+    docCounts.set(d.project, (docCounts.get(d.project) || 0) + 1)
+    if (!counts.has(d.project)) counts.set(d.project, 0)
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([name, open]) => ({ name, open, docs: docCounts.get(name) || 0 }))
 }
 
-// Projects worth showing in the switcher: the ones with something left to do.
-export const activeProjects = (projects) => projects.filter((p) => p.open > 0)
+// Projects worth showing in the switcher: something left to do, or docs.
+export const activeProjects = (projects) => projects.filter((p) => p.open > 0 || p.docs > 0)
 
 export function suggest(projects, query) {
   const matches = projects.filter((p) => p.name.startsWith(query)).slice(0, 5)

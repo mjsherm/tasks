@@ -2,6 +2,7 @@ import React, { memo, useEffect, useRef, useMemo, useState } from 'react'
 import { AnimatePresence, LayoutGroup, Reorder, motion } from 'motion/react'
 import TaskRow, { hovered } from './TaskRow.jsx'
 import ProjectSwitcher from './ProjectSwitcher.jsx'
+import DocShelf from './DocShelf.jsx'
 import TagMenu, { menuKeys } from './TagMenu.jsx'
 import { api } from '../api.js'
 import { parseTitle, tagAtCaret, suggest, displayName } from '../projects.js'
@@ -18,7 +19,7 @@ let measure = null
 
 const layoutSpring = { type: 'spring', stiffness: 700, damping: 50, mass: 0.6 }
 
-function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, showDone, dispatch, onOpen, onDelete, onArchive, onFilter, onClearProject }) {
+function TaskList({ tasks, docs, projects, active, filter, initialDraft, onDraft, showDone, dispatch, onOpen, onOpenDoc, onNewDoc, onShowDocs, onDelete, onArchive, onFilter, onClearProject }) {
   const visible = useMemo(() => (filter ? tasks.filter((t) => t.project === filter) : tasks), [tasks, filter])
   const open = useMemo(() => visible.filter((t) => !t.done), [visible])
   const done = useMemo(
@@ -57,6 +58,7 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
       </header>
 
       <LayoutGroup>
+        <DocShelf docs={docs} filter={filter} onNew={onNewDoc} onOpen={onOpenDoc} onShowAll={onShowDocs} />
         <AnimatePresence initial={false}>
           {todays.length > 0 && (
             <motion.div key="today-label" layout="position" transition={layoutSpring} className="section-label today-label"
@@ -69,7 +71,7 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
         <Reorder.Group as="ul" axis="y" className="rows" values={todayIds} onReorder={(ids) => dispatch({ type: 'reorder', ids })}>
           <AnimatePresence initial={false}>
             {todays.map((t) => (
-              <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
+              <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} docs={docs} onOpenDoc={onOpenDoc} />
             ))}
           </AnimatePresence>
         </Reorder.Group>
@@ -84,7 +86,7 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
         <Reorder.Group as="ul" axis="y" className="rows" values={laterIds} onReorder={(ids) => dispatch({ type: 'reorder', ids })}>
           <AnimatePresence initial={false}>
             {later.map((t) => (
-              <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
+              <TaskRow key={t.id} task={t} draggable showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} docs={docs} onOpenDoc={onOpenDoc} />
             ))}
           </AnimatePresence>
         </Reorder.Group>
@@ -112,7 +114,7 @@ function TaskList({ tasks, projects, active, filter, initialDraft, onDraft, show
               <ul className="rows">
                 <AnimatePresence initial={false}>
                   {done.map((t) => (
-                    <TaskRow key={t.id} task={t} showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} />
+                    <TaskRow key={t.id} task={t} showProject={!filter} dispatch={dispatch} onOpen={onOpen} onDelete={onDelete} onFilter={onFilter} docs={docs} onOpenDoc={onOpenDoc} />
                   ))}
                 </AnimatePresence>
               </ul>
@@ -136,7 +138,7 @@ const NewTask = memo(function NewTask({ dispatch, initialDraft, onDraft, empty, 
       if (!input.current?.offsetParent) return
       // Escape on the list hides the app, same as pressing ⌥Space again.
       if (e.key === 'Escape') {
-        if (e.defaultPrevented || document.querySelector('.type-panel, .tag-menu, .capture')) return
+        if (e.defaultPrevented || document.querySelector('.type-panel, .tag-menu, .capture, .palette')) return
         document.activeElement?.blur?.()
         api.hide()
         return
