@@ -2,6 +2,9 @@ import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'rea
 import { Extension } from '@tiptap/core'
 import Suggestion from '@tiptap/suggestion'
 import { ReactRenderer } from '@tiptap/react'
+import { DocIcon } from './DocLink.jsx'
+import { docBridge, docTitle, byEdited } from '../docs.js'
+import { displayName } from '../projects.js'
 
 const COMMANDS = [
   { title: 'Text', icon: 'T', hint: 'Plain writing', run: (c) => c.setParagraph() },
@@ -35,8 +38,9 @@ const SlashList = forwardRef(function SlashList({ items, command }, ref) {
   return (
     <div className="slash-menu" role="listbox">
       {items.map((item, i) => (
+        <React.Fragment key={(item.kind || 'cmd') + (item.id || item.title)}>
+        {item.kind && !items[i - 1]?.kind && <div className="slash-section">Link a doc</div>}
         <button
-          key={item.title}
           type="button"
           role="option"
           aria-selected={i === index}
@@ -45,16 +49,35 @@ const SlashList = forwardRef(function SlashList({ items, command }, ref) {
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => command(item)}
         >
-          <span className="slash-icon">{item.icon}</span>
+          <span className="slash-icon">{item.kind ? <DocIcon size={15} /> : item.icon}</span>
           <span className="slash-text">
-            <span>{item.title}</span>
+            <span>{item.kind === 'newDoc' ? `New doc “${item.title}”` : item.title}</span>
             <span className="slash-hint">{item.hint}</span>
           </span>
         </button>
+        </React.Fragment>
       ))}
     </div>
   )
 })
+
+// Docs in the / menu: the latest few when nothing (or "doc"/"link") is typed,
+// otherwise the ones whose name matches, then "New doc" for a name that
+// isn't a doc yet.
+function docItems(q, blockCount, raw) {
+  const self = docBridge.current?.()
+  const here = docBridge.project()
+  const docs = docBridge.list().filter((d) => d.id !== self)
+  const browsing = !q || 'doc'.startsWith(q) || 'docs'.startsWith(q) || 'link'.startsWith(q)
+  const matches = docs
+    .filter((d) => browsing || docTitle(d).toLowerCase().includes(q))
+    .sort((a, b) => (b.project === here) - (a.project === here) || byEdited(a, b))
+    .slice(0, browsing ? 3 : 6)
+    .map((d) => ({ kind: 'doc', id: d.id, title: docTitle(d), hint: d.project ? displayName(d.project) : 'No project' }))
+  const exact = docs.some((d) => docTitle(d).toLowerCase() === q)
+  const offerNew = q && !browsing && !exact && !blockCount
+  return offerNew ? [...matches, { kind: 'newDoc', title: raw.trim(), hint: 'Make a doc and link it' }] : matches
+}
 
 export const SlashCommand = Extension.create({
   name: 'slashCommand',
@@ -63,13 +86,23 @@ export const SlashCommand = Extension.create({
       Suggestion({
         editor: this.editor,
         char: '/',
-        allowSpaces: false,
+        // Spaces are allowed so a doc's full name can be typed ("/launch plan").
+        allowSpaces: true,
         placement: 'bottom-start',
         items: ({ query }) => {
-          const q = query.toLowerCase()
-          return COMMANDS.filter((c) => (c.title + ' ' + (c.alias || '')).toLowerCase().includes(q))
+          const q = query.toLowerCase().trim()
+          const blocks = q.includes(' ') ? [] : COMMANDS.filter((c) => (c.title + ' ' + (c.alias || '')).toLowerCase().includes(q))
+          return [...blocks, ...docItems(q, blocks.length, query)]
         },
         command: ({ editor, range, props }) => {
+          if (props.kind) {
+            const id = props.kind === 'newDoc' ? docBridge.create(props.title, docBridge.project()) : props.id
+            if (!id) return
+            editor.chain().focus().deleteRange(range)
+              .insertContent([{ type: 'docLink', attrs: { id, title: props.title } }, { type: 'text', text: ' ' }])
+              .run()
+            return
+          }
           props.run(editor.chain().focus().deleteRange(range)).run()
         },
         render: () => {

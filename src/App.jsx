@@ -227,7 +227,7 @@ export default function App() {
               </motion.div>
             ) : current === 'docs' ? (
               <motion.div key="docs" className="page" {...page}>
-                <DocsView docs={state.docs} filter={filter} onBack={back} onOpen={openDoc} onNew={createAndOpenDoc} onDelete={deleteDoc} />
+                <DocsView docs={state.docs} filter={filter} active={active} onFilter={setFilter} onClearProject={clearProject} onBack={back} onOpen={openDoc} onNew={createAndOpenDoc} onDelete={deleteDoc} />
               </motion.div>
             ) : current === 'trash' ? (
               <motion.div key="trash" className="page" {...page}>

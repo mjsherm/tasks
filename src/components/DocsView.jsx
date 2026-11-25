@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { DocIcon } from './DocLink.jsx'
+import ProjectSwitcher from './ProjectSwitcher.jsx'
 import { displayName } from '../projects.js'
 import { snippet, when, docTitle, byEdited } from '../docs.js'
 
 // Every doc, or every doc in the current project. Opened from the DOCS label
 // or the "N docs" count above the task list, or with D.
-export default function DocsView({ docs: all, filter, onBack, onOpen, onNew, onDelete }) {
+export default function DocsView({ docs: all, filter, active, onFilter, onClearProject, onBack, onOpen, onNew, onDelete }) {
   const docs = useMemo(() => (filter ? all.filter((d) => d.project === filter) : all).slice().sort(byEdited), [all, filter])
 
   useEffect(() => {
@@ -25,8 +26,11 @@ export default function DocsView({ docs: all, filter, onBack, onOpen, onNew, onD
       <button type="button" className="back" onClick={onBack}>
         <span aria-hidden>←</span> {filter ? displayName(filter) : 'Tasks'}
       </button>
-      <h1 className="trash-title">Docs{filter ? <span className="muted"> · #{filter}</span> : null}</h1>
-      <p className="meta">{docs.length ? `${docs.length} ${docs.length === 1 ? 'doc' : 'docs'}` : 'Nothing written yet.'}</p>
+      {/* Same top line as the task list, so you can switch projects here too. */}
+      <header className="list-head docs-head">
+        {active.length ? <ProjectSwitcher projects={active} current={filter} onPick={onFilter} onClear={onClearProject} /> : <span>All</span>}
+        <span className="muted">{docs.length ? `${docs.length} ${docs.length === 1 ? 'doc' : 'docs'}` : 'No docs yet'}</span>
+      </header>
       <button type="button" className="new-row new-doc-row" onClick={onNew}>
         <span className="new-plus" aria-hidden>+</span>
         <span className="muted">New doc</span>

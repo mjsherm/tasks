@@ -445,8 +445,6 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .doc-chip:hover { background: var(--hover); }
 .doc-chip.is-missing { color: var(--faint); text-decoration: line-through; cursor: default; }
 .ProseMirror-selectednode.doc-chip { background: var(--hover); }
-.doc-menu-icon { width: 32px; height: 32px; flex: none; display: grid; place-items: center; color: var(--soft); }
-.doc-menu .slash-item { min-height: 40px; }
 
 .row-doc {
   flex: none; display: inline-flex; align-items: center; gap: 4px; max-width: 160px;
@@ -481,3 +479,5 @@ input, textarea { font: inherit; color: inherit; background: none; border: 0; ou
 .palette kbd { font: inherit; font-size: 11px; color: var(--soft); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; flex: none; }
 .palette mark { background: rgba(255, 214, 10, 0.35); color: inherit; border-radius: 2px; }
 .palette-empty { padding: 14px 12px; color: var(--faint); font-size: 14px; }
+.slash-section { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); padding: 8px 8px 4px; }
+.docs-head { padding-left: 34px; margin-top: 2px; }
